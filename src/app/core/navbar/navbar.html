@@ -1,0 +1,44 @@
+<div class="navbar-container">
+  <!-- Izquierda: (opcional, logo/brand) -->
+  <div class="nav-left">
+    <!-- Poné tu logo o nombre si querés -->
+    <!-- <a routerLink="/" class="brand">Sistema</a> -->
+  </div>
+
+  <!-- Derecha -->
+  <div class="nav-right">
+    <!-- Si NO hay sesión: botón Ingresar -->
+    <button *ngIf="!isAuthenticated" class="login-btn" (click)="gotoLogin()">
+      Ingresar
+    </button>
+
+    <!-- Si hay sesión: avatar + menú -->
+    <button *ngIf="isAuthenticated"
+            class="button-navbar"
+            type="button"
+            (click)="toggleMenu()"
+            aria-haspopup="menu"
+            aria-expanded="{{menuOpen}}">
+      <span class="material-symbols-outlined">account_circle</span>
+    </button>
+
+    <div *ngIf="menuOpen" class="menu" role="menu">
+      <a class="menu-item" (click)="gotoAccount(); menuOpen=false">
+        <span class="material-symbols-outlined icon">person</span>
+        Cuenta
+      </a>
+
+      <a class="menu-item" (click)="gotoHelp(); menuOpen=false">
+        <span class="material-symbols-outlined icon">help</span>
+        Ayuda
+      </a>
+
+      <hr>
+
+      <button class="menu-item danger" type="button" (click)="logout()">
+        <span class="material-symbols-outlined icon danger">logout</span>
+        Salir
+      </button>
+    </div>
+  </div>
+</div>

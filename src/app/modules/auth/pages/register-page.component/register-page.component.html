@@ -1,0 +1,159 @@
+<div class="login-container">
+  <div class="login-card">
+    <!-- Header -->
+    <div class="login-header">
+      <div class="login-icon">👤</div>
+      <h1 class="login-title">Crear Cuenta</h1>
+      <p class="login-subtitle">Regístrate para comenzar</p>
+    </div>
+
+    <!-- Server error -->
+    <div *ngIf="serverError" class="alert alert-danger">{{ serverError }}</div>
+
+    <!-- Form -->
+    <form class="login-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <!-- Nombre Completo -->
+      <div class="form-group">
+        <label for="fullName" class="form-label">
+          <span class="label-icon">👤</span>
+          Usuario
+        </label>
+        <input
+          id="fullName"
+          type="text"
+          class="form-input"
+          placeholder="Nombre de Usuario"
+          formControlName="fullName"
+          [class.invalid]="fullName.touched && fullName.invalid"
+          autocomplete="name"
+          required
+        >
+        <div class="field-error" *ngIf="fullName.touched && fullName.errors">
+          <span *ngIf="fullName.errors['required']">El nombre es obligatorio.</span>
+          <span *ngIf="fullName.errors['minlength']">Mínimo 3 caracteres.</span>
+          <span *ngIf="fullName.errors['maxlength']">Máximo 60 caracteres.</span>
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email" class="form-label">
+          <span class="label-icon">📧</span>
+          Correo Electrónico
+        </label>
+        <input
+          id="email"
+          type="email"
+          class="form-input"
+          placeholder="tu@email.com"
+          formControlName="email"
+          [class.invalid]="email.touched && email.invalid"
+          autocomplete="email"
+          required
+        >
+        <div class="field-error" *ngIf="email.touched && email.errors">
+          <span *ngIf="email.errors['required']">El email es obligatorio.</span>
+          <span *ngIf="email.errors['email']">Formato de email inválido.</span>
+        </div>
+      </div>
+
+      <!-- Password -->
+<div class="form-group">
+  <label for="password" class="form-label">
+    <span class="label-icon">🔒</span>
+    Contraseña
+  </label>
+
+  <div class="password-wrapper">
+    <input
+      id="password"
+      [type]="showPass ? 'text' : 'password'"
+      class="form-input form-input-with-eye"
+      placeholder="••••••••"
+      formControlName="password"
+      [class.invalid]="password.touched && password.invalid"
+      autocomplete="new-password"
+      required
+    >
+    <button type="button" class="eye" (click)="toggleShowPass()" aria-label="Mostrar u ocultar contraseña">
+      <!-- Blanco/negro: ojo normal cuando está oculto -->
+      <svg *ngIf="!showPass" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <!-- Blanco/negro: ojo tachado cuando está visible -->
+      <svg *ngIf="showPass" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.77 21.77 0 0 1 5.06-5.94"/>
+        <path d="M1 1l22 22"/>
+        <path d="M9.88 9.88A3 3 0 0 0 12 15a3 3 0 0 0 3-3"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Checklist de requisitos (sin símbolo) -->
+  <ul class="pw-checklist">
+    <li [class.ok]="passChecks.len">Mínimo 8 caracteres</li>
+    <li [class.ok]="passChecks.upper">Al menos 1 mayúscula</li>
+    <li [class.ok]="passChecks.lower">Al menos 1 minúscula</li>
+    <li [class.ok]="passChecks.num">Al menos 1 número</li>
+  </ul>
+
+  <div class="field-error" *ngIf="password.touched && password.errors">
+    <span *ngIf="password.errors['required']">La contraseña es obligatoria.</span>
+    <span *ngIf="password.errors['minlength']">Debe tener al menos 8 caracteres.</span>
+    <span *ngIf="password.errors['weakPassword']">Debe cumplir todos los requisitos.</span>
+  </div>
+</div>
+
+      <!-- Confirm Password -->
+    <div class="form-group">
+  <label for="confirmPassword" class="form-label">
+    <span class="label-icon">✅</span>
+    Confirmar Contraseña
+  </label>
+  <input
+    id="confirmPassword"
+    type="password"
+    class="form-input"
+    placeholder="••••••••"
+    formControlName="confirmPassword"
+    [class.invalid]="(confirmPassword.touched && confirmPassword.invalid) || form.hasError('passwordsMismatch')"
+    autocomplete="new-password"
+    required
+  >
+  <div class="field-error" *ngIf="confirmPassword.touched && (confirmPassword.errors || form.hasError('passwordsMismatch'))">
+    <span *ngIf="confirmPassword.errors?.['required']">Confirmar contraseña es obligatorio.</span>
+    <span *ngIf="form.hasError('passwordsMismatch')">Las contraseñas no coinciden.</span>
+  </div>
+  </div>
+
+      <!-- Terms & Conditions -->
+      <div class="form-options">
+        <label class="remember-me">
+          <input type="checkbox" class="checkbox" formControlName="terms">
+          <span class="checkmark"></span>
+          Acepto los términos y condiciones.
+        </label>
+        <div class="field-error" *ngIf="terms.touched && terms.errors?.['required']">Debes aceptar los términos.</div>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="login-button" [disabled]="loading || form.invalid">
+        {{ loading ? 'Registrando...' : 'Registrarse' }}
+      </button>
+    </form>
+
+    <!-- Footer -->
+    <div class="login-footer">
+      ¿Ya tienes cuenta?
+      <div class="signup-link"
+        routerLink="/auth/login"
+        routerLinkActive="active-b"
+        [routerLinkActiveOptions]="{exact: true}">
+        <span>Inicia sesión aquí</span>
+      </div>
+    </div>
+  </div>
+</div>

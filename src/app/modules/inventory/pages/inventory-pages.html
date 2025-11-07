@@ -1,0 +1,33 @@
+<app-navbar></app-navbar>
+<app-sidenav></app-sidenav>
+
+<div class="prueba-i">
+    <h2>Inventario</h2>
+</div>
+
+<div class="prueba-i">
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Stock</th>
+                <th>Precio</th>
+            </tr>
+        </thead>
+        <tbody>
+            <ng-container *ngIf="products$ | async as products; else loading">
+                <tr *ngFor="let product of products">
+                    <td>{{ product.title }}</td>
+                    <td>{{ product.stock }}</td>
+                    <td>{{ product.price }}</td>
+                </tr>
+            </ng-container>
+            
+            <ng-template #loading>
+                <tr>
+                    <td colspan="3">Cargando productos...</td>
+                </tr>
+            </ng-template>
+        </tbody>
+    </table>
+</div>

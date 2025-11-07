@@ -1,0 +1,92 @@
+* { margin: 0.2rem; padding: 0; box-sizing: border-box; }
+
+.login-container {
+  min-height: 100vh; display:flex; justify-content:center; align-items:center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 10px;
+}
+.login-card {
+  width:100%; max-width: 480px; background: rgb(231,231,231);
+  border-radius: 12px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,.1);
+}
+.login-header { text-align:center; margin-bottom: 20px; }
+.login-icon { font-size: 2.5rem; margin-bottom: 8px; }
+.login-title { color: var(--text-color); font-size: 1.5rem; font-weight: 500; margin-bottom: 5px; }
+.login-subtitle { color: var(--text-light); font-size: 1rem; }
+
+.alert { padding: 12px 14px; border-radius: 8px; margin: 10px 0 14px 0; font-size: .95rem; }
+.alert-danger { background: #fdecea; border: 1px solid #f5c6cb; }
+
+.login-form { display:flex; flex-direction:column; gap: 15px; }
+.form-group { display:flex; flex-direction:column; }
+.form-label { display:flex; align-items:center; gap:8px; color:var(--text-color); font-weight:500; margin-bottom:6px; font-size:.9rem; }
+.label-icon { font-size: 1.1rem; }
+
+.form-input {
+  padding: 12px 14px; border: 2px solid var(--border-color); border-radius:8px;
+  font-size: 1rem; transition: all .3s ease; background: #fafafa;
+}
+.form-input:focus { outline:none; border-color: var(--primary-color); background:#fff; box-shadow: 0 0 0 3px rgba(67,97,238,.1); }
+.form-input.invalid { border-color:#e55353; background:#fff5f5; }
+.field-error { color:#e55353; font-size:.85rem; margin-top:4px; }
+
+.password-wrapper { position: relative; }
+.eye {
+  position:absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  border:0; background: transparent; font-size: 1.1rem; cursor: pointer;
+}
+
+.pw-checklist { list-style: none; margin: 6px 0 0 0; padding: 0; font-size: .85rem; color:#6b7280; }
+.pw-checklist li { margin: 2px 0; }
+.pw-checklist li.ok { color: #16a34a; }
+
+.form-options { display:flex; justify-content: space-between; align-items:center; margin:10px 0; }
+.remember-me { display:flex; align-items:center; gap:8px; color:var(--text-light); font-size:.9rem; cursor:pointer; }
+.checkbox { display:none; }
+.checkmark {
+  width: 18px; height: 18px; border: 2px solid rgb(0,0,0); border-radius: 4px;
+  display:flex; align-items:center; justify-content:center; transition: all .3s ease;
+}
+.checkbox:checked + .checkmark { background:#fff; border-color:#fff; }
+.checkbox:checked + .checkmark::after { content:'✓'; color:#000; font-size:12px; font-weight:bold; }
+
+.login-button {
+  background: var(--primary-color); color:#000; border: .1px solid rgb(97,97,97);
+  padding: 10px 18px; border-radius: 8px; font-size: .9rem; font-weight: 600;
+  cursor:pointer; transition: all .3s ease; display:flex; align-items:center; justify-content:center; gap:2px; margin-top:10px;
+}
+.login-button:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 5px 15px rgba(67,97,238,.3); }
+.login-button:active { transform: translateY(0); }
+.login-button[disabled]{ opacity:.7; cursor:not-allowed; }
+
+.login-footer { text-align:center; margin-top:20px; padding-top:15px; border-top:1px solid var(--border-color); color:var(--text-light); font-size:.9rem; }
+.signup-link { color: var(--primary-color); text-decoration: none; font-weight:500; transition: color .3s ease; display:inline-block; margin-left:6px; cursor:pointer; }
+.signup-link:hover { color: var(--primary-dark); text-decoration: underline; }
+
+.form-input { width: 100%; }
+
+/* Wrapper para meter el ojito dentro del input */
+.password-wrapper { position: relative; }
+
+/* Reservar espacio para el ojo a la derecha del input */
+.form-input-with-eye { padding-right: 40px; }
+
+/* Ojito monocromo, dentro del campo */
+.eye {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: #6b7280;         /* gris neutro (blanco/negro) */
+  cursor: pointer;
+  padding: 0;
+  line-height: 0;
+}
+.eye:hover { color: #111827; }  /* un poco más oscuro al hover */
+
+@media (max-width: 480px) {
+  .login-card { padding: 25px 20px; margin: 10px; }
+  .login-title { font-size: 1.4rem; }
+  .form-options { flex-direction: column; gap: 15px; align-items: flex-start; }
+}

@@ -1,0 +1,101 @@
+<div class="login-container">
+  <div class="login-card">
+    <!-- Header -->
+    <div class="login-header">
+      <div class="login-icon">🔐</div>
+      <h1 class="login-title">Iniciar Sesión</h1>
+    </div>
+
+    <!-- Mensaje de error del servidor -->
+    <div *ngIf="serverError" class="alert"
+         [class.alert-warn]="serverError.kind === 'user-not-found' || serverError.kind === 'wrong-password'"
+         [class.alert-danger]="serverError.kind === 'db-connection' || serverError.kind === 'unknown'">
+      {{ serverError.message }}
+      <a *ngIf="serverError.kind === 'user-not-found'" routerLink="/auth/register" class="forgot-password">
+        Crear cuenta
+      </a>
+    </div>
+
+    <!-- Form -->
+    <form class="login-form"
+          [formGroup]="loginForm"
+          (ngSubmit)="onSubmit()"
+          novalidate>
+
+      <!-- Email Field -->
+      <div class="form-group">
+        <label for="email" class="form-label">
+          <span class="label-icon">📧</span>
+          Correo Electrónico
+        </label>
+        <input
+          id="email"
+          type="text"
+          class="form-input"
+          placeholder="tu@email.com"
+          formControlName="email"
+          [class.invalid]="email.touched && email.invalid"
+          autocomplete="username"
+          required
+        >
+        <div class="field-error" *ngIf="email.touched && email.errors">
+          <span *ngIf="email.errors['required']">El email es obligatorio.</span>
+          <span *ngIf="email.errors['email']">El formato de email no es válido.</span>
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <label for="password" class="form-label">
+          <span class="label-icon">🔒</span>
+          Contraseña
+        </label>
+        <input
+          id="password"
+          type="password"
+          class="form-input"
+          placeholder="••••••••"
+          formControlName="password"
+          [class.invalid]="password.touched && password.invalid || (serverError?.kind === 'wrong-password')"
+          autocomplete="current-password"
+          required
+        >
+        <div class="field-error" *ngIf="password.touched && password.errors">
+          <span *ngIf="password.errors['required']">La contraseña es obligatoria.</span>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        class="login-button button-icon"
+        [disabled]="loading || loginForm.invalid">
+        <ng-container *ngIf="loading; else entrar">Ingresando...</ng-container>
+        <ng-template #entrar>Ingresar</ng-template>
+      </button>
+    </form>
+
+    <!-- Extras -->
+    <div class="form-options">
+      <label class="remember-me">
+        <input type="checkbox" class="checkbox">
+        <span class="checkmark"></span>
+        Recordarme
+      </label>
+      <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+    </div>
+
+    <div class="login-footer2">
+      ¿No tienes cuenta?
+    </div>
+
+    <div
+      type="button"
+      class="login-footer"
+      routerLink="/auth/register"
+      routerLinkActive="active-b"
+      [routerLinkActiveOptions]="{exact: true}">
+      <span class="button-icon">Registrarse</span>
+    </div>
+  </div>
+</div>

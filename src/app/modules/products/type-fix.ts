@@ -1,0 +1,1 @@
+export type ProductsResponse = any; // Temporalmente
