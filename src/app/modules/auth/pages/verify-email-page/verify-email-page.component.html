@@ -33,9 +33,26 @@
       </button>
     </form>
 
-    <button class="resend-button" type="button" (click)="resend()" [disabled]="resendLoading">
-      {{ resendLoading ? "Enviando..." : "Reenviar Código" }}
+   <button
+      class="resend-button"
+      type="button"
+      (click)="resend()"
+      [disabled]="resendLoading || resendCooldown > 0"
+      >
+      <ng-container *ngIf="resendLoading">
+        Enviando...
+      </ng-container>
+
+      <ng-container *ngIf="!resendLoading && resendCooldown === 0">
+        Reenviar Código
+      </ng-container>
+
+      <ng-container *ngIf="!resendLoading && resendCooldown > 0">
+        Reenviar Código ({{ resendCooldown }}s)
+      </ng-container>
     </button>
+
+
 
   </div>
 </div>

@@ -2,27 +2,24 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
-  inject
+  inject,
+  OnDestroy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { finalize } from 'rxjs/operators';          // 👈 IMPORT NECESARIO
+import { finalize } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-verify-email-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    // RouterLink ya no es necesario porque no lo usamos en el HTML
-  ],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './verify-email-page.component.html',
   styleUrl: './verify-email-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class VerifyEmailPageComponent {
+export class VerifyEmailPageComponent implements OnDestroy {
 
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
@@ -37,6 +34,10 @@ export class VerifyEmailPageComponent {
 
   email: string = '';
 
+  // 🔹 segundos de cooldown para el botón de reenvío
+  resendCooldown = 0;
+  private resendTimerId: any = null;
+
   form = this.fb.group({
     code: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]],
   });
@@ -48,6 +49,28 @@ export class VerifyEmailPageComponent {
     } else {
       this.email = emailParam;
     }
+  }
+
+  ngOnDestroy(): void {
+    if (this.resendTimerId) {
+      clearInterval(this.resendTimerId);
+    }
+  }
+
+  private startCooldown(seconds: number) {
+    this.resendCooldown = seconds;
+    if (this.resendTimerId) {
+      clearInterval(this.resendTimerId);
+    }
+    this.resendTimerId = setInterval(() => {
+      this.resendCooldown--;
+      if (this.resendCooldown <= 0) {
+        this.resendCooldown = 0;
+        clearInterval(this.resendTimerId);
+        this.resendTimerId = null;
+      }
+      this.cdr.markForCheck();
+    }, 1000);
   }
 
   submit() {
@@ -93,7 +116,7 @@ export class VerifyEmailPageComponent {
   }
 
   resend() {
-    if (!this.email) return;
+    if (!this.email || this.resendCooldown > 0) return;
 
     this.resendLoading = true;
     this.serverError = null;
@@ -102,16 +125,24 @@ export class VerifyEmailPageComponent {
     this.auth.resendVerificationCode(this.email).subscribe({
       next: ok => {
         this.resendLoading = false;
+
         if (ok) {
           this.successMsg = 'Se envió un nuevo código a tu email.';
+          // 🔹 arrancamos el cooldown de 30s
+          this.startCooldown(30);
         } else {
           this.serverError = 'No se pudo reenviar el código.';
         }
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
         this.resendLoading = false;
-        this.serverError = 'No se pudo reenviar el código.';
+
+        const msg = err?.error?.message || 'No se pudo reenviar el código.';
+        this.serverError = msg;
+
+        // Si el backend dice que hay que esperar 30s, igual estamos protegidos. 
+        // Si dice "máximo reenvíos en 24 horas", simplemente mostramos el error.
         this.cdr.markForCheck();
       }
     });
