@@ -57,80 +57,104 @@
             </td>
 
             <!-- Nombre -->
-            <td>
-              <ng-container *ngIf="editMode; else nameRead">
-                <input type="text"
-                       [(ngModel)]="editedProducts[i].title"
-                       class="cell-input" />
-              </ng-container>
-              <ng-template #nameRead>
-                {{ p.title }}
-              </ng-template>
-            </td>
+        <td>
+          <ng-container *ngIf="editMode; else nameRead">
+            <input type="text"
+                [(ngModel)]="editedProducts[i].title"
+                class="cell-input"
+                [class.input-error]="editedErrors[p.id]?.title" />
+            <div class="error-message" *ngIf="editedErrors[p.id]?.title">
+              {{ editedErrors[p.id]?.title }}
+            </div>
+          </ng-container>
+          <ng-template #nameRead>
+            {{ p.title }}
+          </ng-template>
+        </td>
 
             <!-- Stock -->
-            <td>
-              <ng-container *ngIf="editMode; else stockRead">
-                <input type="number"
-                       min="0"
-                       [(ngModel)]="editedProducts[i].stock"
-                       class="cell-input number" />
+        <td>
+         <ng-container *ngIf="editMode; else stockRead">
+           <input type="number"
+                 min="0"
+                [(ngModel)]="editedProducts[i].stock"
+                 class="cell-input number"
+                 [class.input-error]="editedErrors[p.id]?.stock" />
+                <div class="error-message" *ngIf="editedErrors[p.id]?.stock">
+             {{ editedErrors[p.id]?.stock }}
+          </div>
               </ng-container>
-              <ng-template #stockRead>
+         <ng-template #stockRead>
                 {{ p.stock }}
-              </ng-template>
-            </td>
+         </ng-template>
+      </td>
 
             <!-- Precio 1 -->
             <td>
               <ng-container *ngIf="editMode; else price1Read">
                 <input type="number"
-                       min="0"
-                       step="0.01"
-                       [(ngModel)]="editedProducts[i].price"
-                       class="cell-input number" />
+                      min="0"
+                      step="0.01"
+                      [(ngModel)]="editedProducts[i].price"
+                      class="cell-input number"
+                      [class.input-error]="editedErrors[p.id]?.price" />
+                <div class="error-message" *ngIf="editedErrors[p.id]?.price">
+                  {{ editedErrors[p.id]?.price }}
+                </div>
               </ng-container>
               <ng-template #price1Read>
                 {{ p.price | currency:'ARS':'symbol-narrow':'1.2-2' }}
               </ng-template>
             </td>
 
-            <!-- Precio 2 -->
+                        <!-- Precio 2 -->
             <td>
               <ng-container *ngIf="editMode; else price2Read">
                 <input type="number"
-                       min="0"
-                       step="0.01"
-                       [(ngModel)]="editedProducts[i].price2"
-                       class="cell-input number" />
+                      min="0"
+                      step="0.01"
+                      [(ngModel)]="editedProducts[i].price2"
+                      class="cell-input number"
+                      [class.input-error]="editedErrors[p.id]?.price2" />
+                <div class="error-message" *ngIf="editedErrors[p.id]?.price2">
+                  {{ editedErrors[p.id]?.price2 }}
+                </div>
               </ng-container>
               <ng-template #price2Read>
                 {{ p.price2 | currency:'ARS':'symbol-narrow':'1.2-2' }}
               </ng-template>
             </td>
 
-            <!-- Precio 3 -->
+                        <!-- Precio 3 -->
             <td>
               <ng-container *ngIf="editMode; else price3Read">
                 <input type="number"
-                       min="0"
-                       step="0.01"
-                       [(ngModel)]="editedProducts[i].price3"
-                       class="cell-input number" />
+                      min="0"
+                      step="0.01"
+                      [(ngModel)]="editedProducts[i].price3"
+                      class="cell-input number"
+                      [class.input-error]="editedErrors[p.id]?.price3" />
+                <div class="error-message" *ngIf="editedErrors[p.id]?.price3">
+                  {{ editedErrors[p.id]?.price3 }}
+                </div>
               </ng-container>
               <ng-template #price3Read>
                 {{ p.price3 | currency:'ARS':'symbol-narrow':'1.2-2' }}
               </ng-template>
             </td>
 
-            <!-- Precio 4 -->
+                        <!-- Precio 4 -->
             <td>
               <ng-container *ngIf="editMode; else price4Read">
                 <input type="number"
-                       min="0"
-                       step="0.01"
-                       [(ngModel)]="editedProducts[i].price4"
-                       class="cell-input number" />
+                      min="0"
+                      step="0.01"
+                      [(ngModel)]="editedProducts[i].price4"
+                      class="cell-input number"
+                      [class.input-error]="editedErrors[p.id]?.price4" />
+                <div class="error-message" *ngIf="editedErrors[p.id]?.price4">
+                  {{ editedErrors[p.id]?.price4 }}
+                </div>
               </ng-container>
               <ng-template #price4Read>
                 {{ p.price4 | currency:'ARS':'symbol-narrow':'1.2-2' }}
@@ -162,54 +186,84 @@
     <label>
       Nombre del producto *
       <input type="text"
-             [(ngModel)]="newProduct.title"
-             placeholder="Ej: Coca Cola lata"
-             class="modal-input" />
+            [(ngModel)]="newProduct.title"
+            placeholder="Ej: Coca Cola lata"
+            class="modal-input"
+            [class.input-error]="newProductErrors.title" />
+      <div class="error-message" *ngIf="newProductErrors.title">
+        {{ newProductErrors.title }}
+      </div>
     </label>
+
 
     <label>
       Stock inicial
       <input type="number"
-             min="0"
-             [(ngModel)]="newProduct.stock"
-             class="modal-input" />
+            min="0"
+            [(ngModel)]="newProduct.stock"
+            class="modal-input"
+            [class.input-error]="newProductErrors.stock" />
+      <div class="error-message" *ngIf="newProductErrors.stock">
+        {{ newProductErrors.stock }}
+      </div>
     </label>
+
 
     <label>
       Precio 1
       <input type="number"
-             min="0"
-             step="0.01"
-             [(ngModel)]="newProduct.price"
-             class="modal-input" />
+            min="0"
+            step="0.01"
+            [(ngModel)]="newProduct.price"
+            class="modal-input"
+            [class.input-error]="newProductErrors.price" />
+      <div class="error-message" *ngIf="newProductErrors.price">
+        {{ newProductErrors.price }}
+      </div>
     </label>
 
+
     <label>
-      Precio 2
-      <input type="number"
-             min="0"
-             step="0.01"
-             [(ngModel)]="newProduct.price2"
-             class="modal-input" />
+        Precio 2
+        <input type="number"
+              min="0"
+              step="0.01"
+              [(ngModel)]="newProduct.price2"
+              class="modal-input"
+              [class.input-error]="newProductErrors.price2" />
+        <div class="error-message" *ngIf="newProductErrors.price2">
+          {{ newProductErrors.price2 }}
+        </div>
     </label>
+
 
     <label>
       Precio 3
       <input type="number"
-             min="0"
-             step="0.01"
-             [(ngModel)]="newProduct.price3"
-             class="modal-input" />
+            min="0"
+            step="0.01"
+            [(ngModel)]="newProduct.price3"
+            class="modal-input"
+            [class.input-error]="newProductErrors.price3" />
+      <div class="error-message" *ngIf="newProductErrors.price3">
+        {{ newProductErrors.price3 }}
+      </div>
     </label>
+
 
     <label>
       Precio 4
       <input type="number"
-             min="0"
-             step="0.01"
-             [(ngModel)]="newProduct.price4"
-             class="modal-input" />
+            min="0"
+            step="0.01"
+            [(ngModel)]="newProduct.price4"
+            class="modal-input"
+            [class.input-error]="newProductErrors.price4" />
+      <div class="error-message" *ngIf="newProductErrors.price4">
+        {{ newProductErrors.price4 }}
+      </div>
     </label>
+
 
     <div class="modal-actions">
       <button class="btn btn-cancel" type="button" (click)="closeAddForm()" [disabled]="loading">

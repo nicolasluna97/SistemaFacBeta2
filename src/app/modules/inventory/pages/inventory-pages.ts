@@ -24,16 +24,38 @@ export class InventoryPages implements OnInit {
 
   selectedIds = new Set<string>();
 
-  // 🔹 NUEVO: estado del formulario para agregar
+  // 🔹 Formulario para agregar (notá que uso `any` para simplificar los null)
   showAddForm = false;
-  newProduct = {
+  newProduct: any = {
     title: '',
-    stock: 0,
-    price: 0,
-    price2: 0,
-    price3: 0,
-    price4: 0
+    stock: null,
+    price: null,
+    price2: null,
+    price3: null,
+    price4: null
   };
+
+  // 🔹 Errores para el modal de "Agregar producto"
+  newProductErrors = {
+    title: '',
+    stock: '',
+    price: '',
+    price2: '',
+    price3: '',
+    price4: ''
+  };
+
+  // 🔹 Errores por fila al editar (key = id del producto)
+  editedErrors: {
+    [id: string]: {
+      title?: string;
+      stock?: string;
+      price?: string;
+      price2?: string;
+      price3?: string;
+      price4?: string;
+    }
+  } = {};
 
   constructor(private productsSvc: ProductsService) {}
 
@@ -49,6 +71,7 @@ export class InventoryPages implements OnInit {
         this.products = data;
         this.editedProducts = JSON.parse(JSON.stringify(data));
         this.loading = false;
+        this.editedErrors = {};
       },
       error: () => {
         this.loading = false;
@@ -57,16 +80,123 @@ export class InventoryPages implements OnInit {
     });
   }
 
+  // ========= VALIDACIONES COMUNES =========
+
+  private normalizeNumber(value: any): number | 'invalid' {
+    if (value === null || value === undefined || value === '') {
+      return 0; // campo vacío => 0
+    }
+    const n = Number(value);
+    if (isNaN(n) || n < 0) {
+      return 'invalid';
+    }
+    return n;
+  }
+
+  // --------- VALIDAR NUEVO PRODUCTO (MODAL) ---------
+  private validateNewProduct(): boolean {
+    let valid = true;
+
+    // limpiar errores
+    this.newProductErrors = {
+      title: '',
+      stock: '',
+      price: '',
+      price2: '',
+      price3: '',
+      price4: ''
+    };
+
+    // título
+    const title = (this.newProduct.title || '').trim();
+    if (!title) {
+      this.newProductErrors.title = 'Se necesita que el producto tenga un título';
+      valid = false;
+    } else {
+      this.newProduct.title = title;
+    }
+
+    // helper interno
+    const checkField = (field: keyof typeof this.newProductErrors) => {
+      const normalized = this.normalizeNumber(this.newProduct[field]);
+      if (normalized === 'invalid') {
+        this.newProductErrors[field] = 'No se aceptan letras y/o números negativos';
+        valid = false;
+      } else {
+        this.newProduct[field] = normalized;
+      }
+    };
+
+    checkField('stock');
+    checkField('price');
+    checkField('price2');
+    checkField('price3');
+    checkField('price4');
+
+    return valid;
+  }
+
+  // --------- VALIDAR PRODUCTOS EDITADOS (TABLA) ---------
+  private validateEditedProducts(): boolean {
+    let valid = true;
+    this.editedErrors = {};
+
+    for (const p of this.editedProducts) {
+      const rowErr: any = {};
+
+      // título
+      const title = (p.title || '').trim();
+      if (!title) {
+        rowErr.title = 'Se necesita que el producto tenga un título';
+        valid = false;
+      } else {
+        p.title = title;
+      }
+
+      const checkField = (field: 'stock' | 'price' | 'price2' | 'price3' | 'price4') => {
+        const value: any = (p as any)[field];
+        const normalized = this.normalizeNumber(value);
+        if (normalized === 'invalid') {
+          rowErr[field] = 'No se aceptan letras y/o números negativos';
+          valid = false;
+        } else {
+          (p as any)[field] = normalized;
+        }
+      };
+
+      checkField('stock');
+      checkField('price');
+      checkField('price2');
+      checkField('price3');
+      checkField('price4');
+
+      if (Object.keys(rowErr).length > 0) {
+        this.editedErrors[p.id] = rowErr;
+      }
+    }
+
+    return valid;
+  }
+
   // --------- FORMULARIO AGREGAR ---------
   openAddForm() {
     this.showAddForm = true;
+    // campos numéricos vacíos para no arrancar en "0" visualmente
     this.newProduct = {
       title: '',
-      stock: 0,
-      price: 0,
-      price2: 0,
-      price3: 0,
-      price4: 0
+      stock: null,
+      price: null,
+      price2: null,
+      price3: null,
+      price4: null
+    };
+    this.newProductErrors = {
+      title: '',
+      stock: '',
+      price: '',
+      price2: '',
+      price3: '',
+      price4: ''
     };
   }
 
@@ -75,9 +205,9 @@ export class InventoryPages implements OnInit {
   }
 
   saveNewProduct() {
-    const title = this.newProduct.title.trim();
-    if (!title) {
-      alert('El nombre del producto es obligatorio.');
+    // 1️⃣ Validar antes de guardar
+    if (!this.validateNewProduct()) {
+      // si hay errores, se muestran en el modal y no se llama al backend
       return;
     }
 
@@ -89,6 +219,7 @@ export class InventoryPages implements OnInit {
         this.showAddForm = false;
         this.products.push(product);
         this.editedProducts = JSON.parse(JSON.stringify(this.products));
+        this.editedErrors = {};
       },
       error: (err) => {
         console.error('Error creando producto', err);
@@ -100,9 +231,19 @@ export class InventoryPages implements OnInit {
 
   // --------- EDITAR ---------
   toggleEditMode() {
+    // entrar a modo edición
     if (!this.editMode) {
       this.editedProducts = JSON.parse(JSON.stringify(this.products));
+      this.editedErrors = {};
       this.editMode = true;
+      return;
+    }
+
+    // ya estamos en editMode → queremos guardar
+    // 1️⃣ validamos todos los productos
+    if (!this.validateEditedProducts()) {
+      // si hay errores, NO guardamos ni llamamos backend
+      // los errores quedan visibles en la tabla
       return;
     }
 
@@ -118,7 +259,6 @@ export class InventoryPages implements OnInit {
       })
     );
 
-    // guardado “rápido”, si algo falla recargamos
     Promise.all(updates.map(o => o.toPromise()))
       .then(() => {
         this.editMode = false;
@@ -134,6 +274,7 @@ export class InventoryPages implements OnInit {
   cancelEdit() {
     this.editMode = false;
     this.editedProducts = JSON.parse(JSON.stringify(this.products));
+    this.editedErrors = {};
   }
 
   // --------- ELIMINAR ---------
