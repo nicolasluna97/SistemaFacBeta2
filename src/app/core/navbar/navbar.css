@@ -3,28 +3,40 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 50px;    
+  height: 50px;
   width: 100%;
   padding: 0 8px;
 
- 
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
 
-  z-index: 1000;      
+  z-index: 1000;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-weight: 600;
   color: #1e293b;
 }
 
-.nav-left { display: flex; align-items: center; gap: 10px; }
-.nav-right { position: relative; display: flex; align-items: center; gap: 8px; }
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nav-right {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-.brand { text-decoration: none; font-weight: 700; color: #0b0b0b; }
+.brand {
+  text-decoration: none;
+  font-weight: 700;
+  color: #0b0b0b;
+}
 
-/* === BOTONES === */
+
 .button-navbar {
   background-color: transparent;
   border: none;
@@ -38,9 +50,11 @@
   border-radius: 50%;
   transition: background 0.2s ease;
 }
-.button-navbar:hover { background: rgba(0, 0, 0, 0.08); }
+.button-navbar:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
 
-/* Ícono Material */
+
 .material-symbols-outlined {
   font-size: 26px;
   display: flex;
@@ -53,7 +67,7 @@
     'opsz' 24;
 }
 
-/* === BOTÓN INGRESAR === */
+
 .login-btn {
   background: #fff;
   border: 1px solid #cbd5e1;
@@ -70,7 +84,7 @@
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.05);
 }
 
-/* === MENÚ DESPLEGABLE === */
+
 .menu {
   position: absolute;
   right: 0;
@@ -93,7 +107,7 @@
   margin: 6px 0;
 }
 
-/* === ITEMS DEL MENÚ === */
+
 .menu-item {
   display: flex;
   align-items: center;
@@ -119,7 +133,6 @@
   color: #475569;
 }
 
-/* === OPCIÓN SALIR === */
 .menu-item.danger {
   color: #dc2626;
   font-weight: 600;

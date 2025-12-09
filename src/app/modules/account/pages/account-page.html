@@ -1,0 +1,368 @@
+<app-navbar></app-navbar>
+<app-sidenav></app-sidenav>
+
+<div class="page-content">
+  <div class="account-wrapper">
+
+    <h1 class="title">Tu cuenta</h1>
+
+    <!-- error al cargar datos -->
+    <div *ngIf="loadError" class="alert alert-danger">
+      {{ loadError }}
+    </div>
+
+    <!-- ====== TARJETA PRINCIPAL ====== -->
+    <div class="card" *ngIf="me">
+
+      <!-- NOMBRE DE USUARIO -->
+      <div class="row">
+        <div class="label-cell">Nombre de usuario</div>
+        <div class="value-cell">
+
+          <!-- MODO VER -->
+          <ng-container *ngIf="!editingName; else editNameTpl">
+            <span class="value-text">
+              {{ me?.fullName || '-' }}
+            </span>
+
+            <button
+              type="button"
+              class="btn btn-sm"
+              (click)="startEditName()"
+            >
+              Modificar
+            </button>
+          </ng-container>
+
+          <!-- MODO EDICIÓN -->
+          <ng-template #editNameTpl>
+            <div class="edit-name-row" [formGroup]="profileForm">
+              <input
+                type="text"
+                class="text-input"
+                placeholder="Nombre de usuario"
+                formControlName="fullName"
+                [class.invalid]="fullNameCtrl.touched && fullNameCtrl.invalid"
+              />
+
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                (click)="cancelEditName()"
+                [disabled]="profileSaving"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                (click)="saveProfile()"
+                [disabled]="profileSaving || profileForm.invalid"
+              >
+                {{ profileSaving ? 'Guardando...' : 'Aceptar' }}
+              </button>
+            </div>
+
+            <div class="field-error" *ngIf="fullNameCtrl.touched && fullNameCtrl.errors">
+              <span *ngIf="fullNameCtrl.errors['required']">
+                El nombre es obligatorio.
+              </span>
+              <span *ngIf="fullNameCtrl.errors['minlength']">
+                Mínimo 2 caracteres.
+              </span>
+              <span *ngIf="fullNameCtrl.errors['maxlength']">
+                Máximo 80 caracteres.
+              </span>
+            </div>
+
+            <div class="success-msg" *ngIf="profileSuccess">
+              {{ profileSuccess }}
+            </div>
+            <div class="field-error" *ngIf="profileError">
+              {{ profileError }}
+            </div>
+          </ng-template>
+
+        </div>
+      </div>
+
+      <!-- EMAIL -->
+      <div class="row">
+        <div class="label-cell">Email</div>
+        <div class="value-cell">
+          {{ me?.email || '-' }}
+        </div>
+        <div class="actions-cell">
+          <button
+            class="btn btn-secondary"
+            type="button"
+            (click)="openEmailModal()"
+          >
+            Cambiar email
+          </button>
+        </div>
+      </div>
+
+      <!-- CONTRASEÑA -->
+      <div class="row">
+        <div class="label-cell">Contraseña</div>
+        <div class="value-cell">********</div>
+        <div class="actions-cell">
+          <button
+            class="btn btn-secondary"
+            type="button"
+            (click)="openPasswordModal()"
+          >
+            Cambiar contraseña
+          </button>
+        </div>
+      </div>
+
+      <!-- VERIFICADO -->
+      <div class="row">
+        <div class="label-cell">Verificado</div>
+        <div class="value-cell">
+          {{ me?.verified ? 'Sí' : 'No' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ======= MODAL CAMBIAR EMAIL ======= -->
+    <div class="modal-backdrop" *ngIf="showEmailModal">
+      <div class="modal-card">
+
+        <div class="alert alert-danger" *ngIf="emailError">
+          {{ emailError }}
+        </div>
+        <div class="alert alert-success" *ngIf="emailSuccess">
+          {{ emailSuccess }}
+        </div>
+
+        <!-- Paso 1: nuevo email -->
+        <ng-container *ngIf="emailStep === 'edit'">
+          <form [formGroup]="emailForm">
+            <label class="modal-label">
+              Nuevo email
+              <input
+                type="email"
+                class="modal-input"
+                placeholder="nuevo@email.com"
+                formControlName="newEmail"
+                [class.invalid]="newEmail.touched && newEmail.invalid"
+              />
+            </label>
+
+            <div class="field-error" *ngIf="newEmail.touched && newEmail.errors">
+              <span *ngIf="newEmail.errors['required']">
+                El email es obligatorio.
+              </span>
+              <span *ngIf="newEmail.errors['email']">
+                Formato de email inválido.
+              </span>
+              <span *ngIf="newEmail.errors['maxlength']">
+                Máximo 100 caracteres.
+              </span>
+            </div>
+
+            <div class="modal-actions">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="closeEmailModal()"
+                [disabled]="emailLoading"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="submitNewEmail()"
+                [disabled]="emailLoading || emailForm.invalid"
+              >
+                {{ emailLoading ? 'Enviando...' : 'Continuar' }}
+              </button>
+            </div>
+          </form>
+        </ng-container>
+
+        <!-- Paso 2: código -->
+        <ng-container *ngIf="emailStep === 'verify'">
+          <p class="small-text">
+            Ingresa el código de 6 dígitos que te enviamos al nuevo email.
+          </p>
+
+          <form [formGroup]="emailCodeForm">
+            <label class="modal-label">
+              Código de verificación
+              <input
+                type="text"
+                maxlength="6"
+                class="modal-input"
+                placeholder="123456"
+                formControlName="code"
+                [class.invalid]="emailCode.touched && emailCode.invalid"
+              />
+            </label>
+
+            <div class="field-error" *ngIf="emailCode.touched && emailCode.errors">
+              <span *ngIf="emailCode.errors['required']">
+                El código es obligatorio.
+              </span>
+              <span *ngIf="emailCode.errors['minlength'] || emailCode.errors['maxlength']">
+                El código debe tener 6 dígitos.
+              </span>
+            </div>
+
+            <div class="resend-row">
+              <button
+                type="button"
+                class="link-btn"
+                (click)="resendEmailCode()"
+                [disabled]="resendSeconds > 0"
+              >
+                Reenviar código
+              </button>
+              <span *ngIf="resendSeconds > 0" class="resend-text">
+                (podés reenviar en {{ resendSeconds }} s)
+              </span>
+            </div>
+
+            <div class="modal-actions">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="closeEmailModal()"
+                [disabled]="emailLoading"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="verifyNewEmail()"
+                [disabled]="emailLoading || emailCodeForm.invalid || emailForm.invalid"
+              >
+                {{ emailLoading ? 'Verificando...' : 'Confirmar email' }}
+              </button>
+            </div>
+          </form>
+        </ng-container>
+
+      </div>
+    </div>
+
+    <!-- ======= MODAL CAMBIAR PASSWORD ======= -->
+    <div class="modal-backdrop" *ngIf="showPasswordModal">
+      <div class="modal-card">
+        <div class="alert alert-danger" *ngIf="passwordError">
+          {{ passwordError }}
+        </div>
+        <div class="alert alert-success" *ngIf="passwordSuccess">
+          {{ passwordSuccess }}
+        </div>
+
+        <form [formGroup]="passwordForm">
+
+          <!-- actual -->
+          <label class="modal-label">
+            Contraseña actual
+            <input
+              type="password"
+              class="modal-input"
+              formControlName="currentPassword"
+              placeholder="********"
+              [class.invalid]="currentPassword.touched && currentPassword.invalid"
+            />
+          </label>
+          <div class="field-error" *ngIf="currentPassword.touched && currentPassword.errors">
+            <span *ngIf="currentPassword.errors['required']">
+              La contraseña actual es obligatoria.
+            </span>
+          </div>
+
+          <!-- nueva -->
+          <label class="modal-label">
+            Nueva contraseña
+            <input
+              type="password"
+              class="modal-input"
+              formControlName="newPassword"
+              placeholder="********"
+              [class.invalid]="newPassword.touched && newPassword.invalid"
+            />
+          </label>
+
+          <ul class="pw-checklist">
+            <li [class.ok]="passChecks.len">Mínimo 6 caracteres</li>
+            <li [class.ok]="passChecks.upper">Al menos 1 mayúscula</li>
+            <li [class.ok]="passChecks.lower">Al menos 1 minúscula</li>
+            <li [class.ok]="passChecks.numOrSymbol">Número o símbolo</li>
+          </ul>
+
+          <div class="field-error" *ngIf="newPassword.touched && newPassword.errors">
+            <span *ngIf="newPassword.errors['required']">
+              La nueva contraseña es obligatoria.
+            </span>
+            <span *ngIf="newPassword.errors['minlength']">
+              Debe tener al menos 6 caracteres.
+            </span>
+            <span *ngIf="newPassword.errors['maxlength']">
+              No puede tener más de 50 caracteres.
+            </span>
+            <span *ngIf="newPassword.errors['weakPassword']">
+              Debe incluir mayúscula, minúscula y número o símbolo.
+            </span>
+          </div>
+
+          <!-- confirmación -->
+          <label class="modal-label">
+            Repetir nueva contraseña
+            <input
+              type="password"
+              class="modal-input"
+              formControlName="confirmNewPassword"
+              placeholder="********"
+              [class.invalid]="confirmNewPassword.touched &&
+                              (confirmNewPassword.invalid || passwordForm.hasError('passwordsMismatch'))"
+            />
+          </label>
+
+          <div class="field-error"
+               *ngIf="confirmNewPassword.touched &&
+                      (confirmNewPassword.errors || passwordForm.hasError('passwordsMismatch'))">
+            <span *ngIf="confirmNewPassword.errors?.['required']">
+              Repetir contraseña es obligatorio.
+            </span>
+            <span *ngIf="passwordForm.hasError('passwordsMismatch')">
+              Las contraseñas no coinciden.
+            </span>
+          </div>
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="closePasswordModal()"
+              [disabled]="passwordLoading"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="changePassword()"
+              [disabled]="passwordLoading || passwordForm.invalid"
+            >
+              {{ passwordLoading ? 'Actualizando...' : 'Cambiar contraseña' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>

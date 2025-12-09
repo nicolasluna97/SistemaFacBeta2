@@ -49,21 +49,38 @@ export class RegisterPageComponent {
     this.form = this.fb.group(
       {
         fullName: this.fb.control('', {
-          validators: [Validators.required, Validators.minLength(3), Validators.maxLength(60)],
+          validators: [
+            Validators.required,
+            Validators.minLength(2),
+            Validators.maxLength(80)
+          ],
           nonNullable: true,
         }),
+
         email: this.fb.control('', {
-          validators: [Validators.required, Validators.email],
+          validators: [
+            Validators.required,
+            Validators.email,
+            Validators.maxLength(100)
+          ],
           nonNullable: true,
         }),
+
         password: this.fb.control('', {
-          validators: [Validators.required, Validators.minLength(8), passwordComplexityValidator],
+          validators: [
+            Validators.required,
+            Validators.minLength(6),
+            Validators.maxLength(50),
+            passwordComplexityValidator
+          ],
           nonNullable: true,
         }),
+
         confirmPassword: this.fb.control('', {
           validators: [Validators.required],
           nonNullable: true,
         }),
+
         terms: this.fb.control(false, {
           validators: [Validators.requiredTrue],
           nonNullable: true,
@@ -73,21 +90,21 @@ export class RegisterPageComponent {
     );
   }
 
-  // ===== Getters de comodidad =====
-  get fullName() { return this.form.controls['fullName'] as AbstractControl; }
-  get email() { return this.form.controls['email'] as AbstractControl; }
-  get password() { return this.form.controls['password'] as AbstractControl; }
-  get confirmPassword() { return this.form.controls['confirmPassword'] as AbstractControl; }
-  get terms() { return this.form.controls['terms'] as AbstractControl; }
+  // ====== GETTERS ======
+  get fullName() { return this.form.controls['fullName']; }
+  get email() { return this.form.controls['email']; }
+  get password() { return this.form.controls['password']; }
+  get confirmPassword() { return this.form.controls['confirmPassword']; }
+  get terms() { return this.form.controls['terms']; }
 
-  // Checklist en vivo para la contraseña
+  // Checklist actualizado (coincide con el backend)
   get passChecks() {
-    const v: string = (this.password.value as string) || '';
+    const v: string = this.password.value || '';
     return {
-      len: v.length >= 8,
+      len: v.length >= 6,
       upper: /[A-Z]/.test(v),
       lower: /[a-z]/.test(v),
-      num: /[0-9]/.test(v),
+      numOrSymbol: /(\d|\W)/.test(v)
     };
   }
 
@@ -95,52 +112,45 @@ export class RegisterPageComponent {
   toggleShowPass2() { this.showPass2 = !this.showPass2; this.cdr.markForCheck(); }
 
   submit() {
-    this.serverError = null;
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
+  this.serverError = null;
+  if (this.form.invalid) {
+    this.form.markAllAsTouched();
+    return;
+  }
 
-    this.loading = true;
+  this.loading = true;
 
-    const { fullName, email, password } = this.form.getRawValue() as {
-      fullName: string;
-      email: string;
-      password: string;
-      confirmPassword: string;
-      terms: boolean;
-    };
+  const { fullName, email, password } = this.form.getRawValue() as {
+    fullName: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    terms: boolean;
+  };
 
-    this.auth.register({ fullName, email, password })
-      .pipe(
-        finalize(() => {
-          this.loading = false;
-          this.cdr.markForCheck();
-        })
-      )
-      .subscribe({
-        next: (ok: boolean) => {
-          if (ok) {
-            // 🔴 ANTES: this.router.navigateByUrl('/');
-            // ✅ AHORA: vamos a la pantalla de verificar email, pasando el email
-            this.router.navigate(['/auth/verify-email'], {
-              queryParams: { email },
-            });
-          } else {
-            this.serverError = 'No se pudo registrar. Verificá los datos.';
-          }
-          this.cdr.markForCheck();
-        },
-        error: (err: any) => {
-          const msg = err?.error?.message || err?.message || 'Ocurrió un error inesperado.';
-          this.serverError = Array.isArray(msg) ? msg.join(' ') : String(msg);
-          this.cdr.markForCheck();
-        }
-      });
+  this.auth.register({ fullName, email, password })
+    .pipe(
+      finalize(() => {
+        this.loading = false;
+        this.cdr.markForCheck();
+      })
+    )
+    .subscribe({
+      next: () => {
+        this.router.navigate(['/auth/verify-email'], {
+          queryParams: { email },
+        });
+      },
+      error: (err: any) => {
+        const msg = err?.error?.message || err?.message || 'Ocurrió un error inesperado.';
+        this.serverError = Array.isArray(msg) ? msg.join(' ') : String(msg);
+        this.cdr.markForCheck();
+      }
+    });
   }
 }
+/* ====== VALIDADORES ====== */
 
-/* ====== Validadores puros (fuera de la clase) ====== */
 function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
   const pass = group.get('password')?.value ?? '';
   const confirm = group.get('confirmPassword')?.value ?? '';
@@ -149,9 +159,12 @@ function passwordsMatchValidator(group: AbstractControl): ValidationErrors | nul
 
 function passwordComplexityValidator(control: AbstractControl): ValidationErrors | null {
   const v: string = control.value || '';
+
   const hasUpper = /[A-Z]/.test(v);
   const hasLower = /[a-z]/.test(v);
-  const hasNumber = /[0-9]/.test(v);
+  const hasNumOrSymbol = /(\d|\W)/.test(v);
 
-  return (hasUpper && hasLower && hasNumber) ? null : { weakPassword: true };
+  return (hasUpper && hasLower && hasNumOrSymbol)
+    ? null
+    : { weakPassword: true };
 }

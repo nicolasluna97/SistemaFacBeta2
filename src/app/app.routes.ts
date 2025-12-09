@@ -25,8 +25,12 @@ export const routes: Routes = [
     redirectTo: '',
     pathMatch: 'full'
   },
-
-  
+  {
+    path: 'cuenta',
+    loadComponent: () => import('./modules/account/pages/account-page')
+    .then(m => m.AccountPage),
+    canActivate: [authGuard]
+  },
   {
     path: 'ventas',
     loadChildren: () => import('./modules/sales/sales.routes').then(m => m.salesRoutes),
@@ -47,8 +51,6 @@ export const routes: Routes = [
     loadChildren: () => import('./modules/statistics/statistics.route').then(m => m.StatisticsRoutes),
     canActivate: [authGuard]
   },
-
- 
   {
     path: '**',
     component: NotFoundPage,

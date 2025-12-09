@@ -8,7 +8,7 @@ import { AuthService } from '../../modules/auth/services/auth.service';
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './navbar.html',
-  styleUrl: './navbar.css'
+  styleUrl: './navbar.css' // lo dejo como ya lo tenías y te viene funcionando
 })
 export class Navbar {
   private auth = inject(AuthService);
@@ -17,8 +17,14 @@ export class Navbar {
 
   menuOpen = false;
 
-  get isAuthenticated() { return this.auth.isAuthenticated(); }
-  get user() { return (this as any).auth?._user?.() ?? null; } // usa tu signal interna
+  get isAuthenticated() {
+    return this.auth.isAuthenticated();
+  }
+
+  // esto ya lo usabas, lo dejo igual
+  get user() {
+    return (this as any).auth?._user?.() ?? null;
+  }
 
   toggleMenu() {
     if (!this.isAuthenticated) {
@@ -28,9 +34,17 @@ export class Navbar {
     this.menuOpen = !this.menuOpen;
   }
 
-  gotoLogin() { this.router.navigateByUrl('/auth/login'); }
-  gotoAccount() { this.router.navigateByUrl('/cuenta'); } // ajustá si tenés otra ruta
-  gotoHelp() { this.router.navigateByUrl('/ayuda'); }     // ajustá si tenés otra ruta
+  gotoLogin() {
+    this.router.navigateByUrl('/auth/login');
+  }
+
+  gotoAccount() {
+    this.router.navigateByUrl('/cuenta');   // ✅ va a cargar AccountPage
+  }
+
+  gotoHelp() {
+    this.router.navigateByUrl('/ayuda');    // (cuando tengas esa ruta)
+  }
 
   logout() {
     this.auth.logout();
@@ -48,5 +62,7 @@ export class Navbar {
 
   // Cerrar menú con Escape
   @HostListener('document:keydown.escape')
-  onEsc() { this.menuOpen = false; }
+  onEsc() {
+    this.menuOpen = false;
+  }
 }
