@@ -51,7 +51,15 @@
               formControlName="email"
               class="text-input"
             />
-            <div class="field-error" *ngIf="emailCtrl.touched && emailCtrl.errors?.['email']">
+
+            <div
+              class="field-error"
+              *ngIf="
+                emailCtrl.touched &&
+                emailCtrl.value &&
+                emailCtrl.hasError('email')
+              "
+            >
               El email no tiene un formato válido.
             </div>
           </div>

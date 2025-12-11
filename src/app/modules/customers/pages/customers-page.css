@@ -46,6 +46,12 @@
   font-size: 14px;
 }
 
+.field-error {
+  color: #e74c3c !important;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
 .text-input {
   width: 100%;
   padding: 8px 10px;
@@ -63,7 +69,6 @@
   font-size: 12px;
   margin-top: 4px;
 }
-
 
 .actions-row {
   margin-top: 12px;

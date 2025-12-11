@@ -34,13 +34,15 @@ export class CustomersPage implements OnInit {
   saveLoading = false;
   saveError: string | null = null;
 
+  // ==== FORMULARIO ====
   form = this.fb.nonNullable.group({
     name: [
       '',
       [Validators.required, Validators.minLength(2), Validators.maxLength(30)],
     ],
     companyName: [''],
-    email: [''],
+    // Email opcional, pero con validación de formato si se completa
+    email: ['', [Validators.email]],
     phone: [''],
     address: [''],
   });
@@ -48,12 +50,12 @@ export class CustomersPage implements OnInit {
   get nameCtrl() {
     return this.form.controls.name;
   }
-  
+
   get emailCtrl() {
-  return this.form.controls.email;
+    return this.form.controls.email;
   }
 
-
+  // ==== CARGA INICIAL ====
   ngOnInit(): void {
     this.loadCustomers();
   }
@@ -77,6 +79,7 @@ export class CustomersPage implements OnInit {
       });
   }
 
+  // ==== SUBMIT ====
   submit() {
     this.saveError = null;
 
@@ -87,7 +90,16 @@ export class CustomersPage implements OnInit {
 
     this.saveLoading = true;
 
-    const dto: CreateCustomerDto = this.form.getRawValue();
+    // Normalizamos: strings vacíos -> undefined para campos opcionales
+    const raw = this.form.getRawValue();
+
+    const dto: CreateCustomerDto = {
+      name: raw.name,
+      companyName: raw.companyName || undefined,
+      email: raw.email || undefined,
+      phone: raw.phone || undefined,
+      address: raw.address || undefined,
+    };
 
     this.customersSvc
       .create(dto)
