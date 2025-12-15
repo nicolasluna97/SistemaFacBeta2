@@ -4,6 +4,7 @@ import { authGuard } from './modules/auth/guards/auth.guard';
 import { NotFoundPage } from './modules/pages/not-found-page/not-found-page/not-found-page';
 import { HistoryComponent } from './modules/history/pages/history.component';
 import historyRoutes from './modules/history/history.route';
+import movementsRoutes from './modules/movements/movements.routes';
 
 export const routes: Routes = [
  
@@ -51,10 +52,11 @@ export const routes: Routes = [
   },
 
   {
-    path: 'historial',
+    path: 'movimientos',
     canActivate: [authGuard],
     loadChildren: () =>
-      import('./modules/history/history.route').then(m => m.historyRoutes),
+      import('./modules/movements/movements.routes').then(
+        m => m.movementsRoutes),
   },
 
   {
