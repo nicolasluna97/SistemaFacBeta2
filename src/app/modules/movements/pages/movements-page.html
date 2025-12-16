@@ -2,28 +2,41 @@
 <app-sidenav></app-sidenav>
 
 <div class="page-content">
-  <h1 class="page-title">Movimientos</h1>
-
-  <div class="filters">
-    <label class="filter-label">Mostrar:</label>
-
-    <!-- Dropdown / lista desplegable -->
-    <select class="filter-select"
-            [value]="range()"
-            (change)="onChangeRange($any($event.target).value)">
-      <option value="24h">Las últimas 24 horas</option>
-      <option value="7d">Última semana</option>
-      <option value="all">Todos los movimientos</option>
-    </select>
-
-    <button class="btn btn-primary"
-            type="button"
-            (click)="search(1)">
-      Buscar
-    </button>
+  <div class="page-header">
+    <h1 class="page-title">Movimientos</h1>
   </div>
 
-  <p *ngIf="loading()">Cargando movimientos...</p>
+  <div class="card filters-card">
+    <div class="filters-row">
+      <div class="filters-left">
+        <label class="filter-label">Mostrar</label>
+
+        <select
+          class="filter-select"
+          [value]="range()"
+          (change)="onChangeRange($any($event.target).value)"
+        >
+          <option value="24h">Las últimas 24 horas</option>
+          <option value="7d">Última semana</option>
+          <option value="all">Todos los movimientos</option>
+        </select>
+
+        <button class="btn btn-primary" type="button" (click)="search(1)">
+          Buscar
+        </button>
+      </div>
+
+      <div class="filters-right" *ngIf="!loading() && !error()">
+        <span class="muted">
+          Total: <strong>{{ total() }}</strong>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading()" class="status-line">
+    Cargando movimientos...
+  </div>
 
   <div *ngIf="error()" class="alert alert-danger">
     {{ error() }}
@@ -33,54 +46,83 @@
     No hay movimientos para mostrar.
   </div>
 
-  <div *ngIf="!loading() && movements().length" class="card">
-    <div class="card-body">
-      <table class="table">
+  <div *ngIf="!loading() && movements().length" class="card table-card">
+    <div class="table-wrap">
+      <table class="table table-modern">
         <thead>
           <tr>
-            <th>Cliente</th>
-            <th>Producto</th>
-            <th>Precio</th>
-            <th>Fecha</th>
-            <th>Estado</th>
-            <th>Empleado</th>
+            <th class="col-client">Cliente</th>
+            <th class="col-product">Producto</th>
+            <th class="col-price">Precio</th>
+            <th class="col-date">Fecha</th>
+            <th class="col-status">Estado</th>
+            <th class="col-employee">Empleado</th>
           </tr>
         </thead>
 
         <tbody>
           <tr *ngFor="let m of movements()">
-            <td>{{ m.customerName }}</td>
-            <td>{{ m.productTitle }}</td>
-            <td>
-              {{ m.unitPrice | number:'1.0-2' }}
-              ({{ formatPriceLabel(m.priceKey) }})
+            <td class="col-client">
+              <div class="cell-main">{{ m.customerName }}</div>
             </td>
-            <td>{{ m.createdAt | date:'HH:mm - dd/MM/yyyy' }}</td>
-            <td>{{ m.status || '' }}</td>
-            <td>{{ m.employee || '' }}</td>
+
+            <td class="col-product">
+              <div class="cell-main">{{ m.productTitle }}</div>
+            </td>
+
+            <td class="col-price">
+              <div class="cell-main">
+                {{ m.unitPrice | number:'1.0-2' }}
+              </div>
+              <div class="cell-sub">
+                ({{ formatPriceLabel(m.priceKey) }})
+              </div>
+            </td>
+
+            <td class="col-date">
+              <div class="cell-main">
+                {{ m.createdAt | date:'HH:mm - dd/MM/yyyy' }}
+              </div>
+            </td>
+
+            <td class="col-status">
+              <span class="pill" [class.pill-empty]="!m.status">
+                {{ m.status || '—' }}
+              </span>
+            </td>
+
+            <td class="col-employee">
+              <span class="pill" [class.pill-empty]="!m.employee">
+                {{ m.employee || '—' }}
+              </span>
+            </td>
           </tr>
         </tbody>
       </table>
+    </div>
 
-      <div class="pagination">
-        <button class="btn btn-light"
-                type="button"
-                [disabled]="!canPrev()"
-                (click)="prevPage()">
-          Anterior
-        </button>
+    <div class="table-footer">
+      <button
+        class="btn btn-light"
+        type="button"
+        [disabled]="!canPrev()"
+        (click)="prevPage()"
+      >
+        Anterior
+      </button>
 
-        <span class="page-indicator">
-          Página {{ page() }} de {{ totalPages() }} ({{ total() }} movimientos)
-        </span>
-
-        <button class="btn btn-light"
-                type="button"
-                [disabled]="!canNext()"
-                (click)="nextPage()">
-          Siguiente
-        </button>
+      <div class="page-indicator">
+        Página <strong>{{ page() }}</strong> de <strong>{{ totalPages() }}</strong>
       </div>
+
+      <button
+        class="btn btn-light"
+        type="button"
+        [disabled]="!canNext()"
+        (click)="nextPage()"
+      >
+        Siguiente
+      </button>
     </div>
   </div>
 </div>

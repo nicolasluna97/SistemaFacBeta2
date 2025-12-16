@@ -1,5 +1,5 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 
 import { Navbar } from 'src/app/core/navbar/navbar';
 import { Sidenav } from 'src/app/core/sidenav/sidenav';
@@ -14,7 +14,7 @@ import type { Movement, MovementRange } from '../entities/movement.entity';
   styleUrls: ['./movements-page.css'],
   imports: [CommonModule, DatePipe, Navbar, Sidenav],
 })
-export class MovementsPage {
+export class MovementsPage implements OnInit {
   private movementsCtrl = inject(MovementsController);
 
   // UI
@@ -40,38 +40,37 @@ export class MovementsPage {
   }
 
   onChangeRange(value: string) {
-    // value viene del <select>
     this.range.set(value as MovementRange);
   }
 
-  search(targetPage?: number) {
-    const nextPage = targetPage ?? 1;
-
+  search(targetPage: number = 1) {
     this.loading.set(true);
     this.error.set(null);
 
-    this.movementsCtrl.getMovements({
-      range: this.range(),
-      page: nextPage,
-      limit: this.limit(),
-    }).subscribe({
-      next: (res) => {
-        this.movements.set(res.data ?? []);
-        this.page.set(res.page ?? nextPage);
-        this.limit.set(res.limit ?? this.limit());
-        this.total.set(res.total ?? 0);
-        this.totalPages.set(res.totalPages ?? 1);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        const msg =
-          err?.error?.message ||
-          err?.message ||
-          'No se pudieron cargar los movimientos.';
-        this.error.set(String(msg));
-        this.loading.set(false);
-      }
-    });
+    this.movementsCtrl
+      .getMovements({
+        range: this.range(),
+        page: targetPage,
+        limit: this.limit(),
+      })
+      .subscribe({
+        next: (res) => {
+          this.movements.set(res.data ?? []);
+          this.page.set(res.page ?? targetPage);
+          this.limit.set(res.limit ?? this.limit());
+          this.total.set(res.total ?? 0);
+          this.totalPages.set(res.totalPages ?? 1);
+          this.loading.set(false);
+        },
+        error: (err) => {
+          const msg =
+            err?.error?.message ||
+            err?.message ||
+            'No se pudieron cargar los movimientos.';
+          this.error.set(String(msg));
+          this.loading.set(false);
+        },
+      });
   }
 
   prevPage() {

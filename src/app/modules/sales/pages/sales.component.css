@@ -107,15 +107,6 @@
   border-collapse: collapse;
 }
 
-.table th, .table td {
-  text-align: center;
-  padding: 8px;
-}
-
-.table th {
-  font-weight: bold;
-}
-
 .trash-btn {
   background: white;
   border: 2px solid red;

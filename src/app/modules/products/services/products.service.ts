@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient} from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface ProductsResponse {
-  // Define la estructura que devuelve tu backend
   data: Product[];
   total?: number;
   page?: number;
@@ -21,12 +20,20 @@ export interface Product {
   userId: string;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+  export type PriceKeyNumber = 1 | 2 | 3 | 4;
+
+  export interface DecreaseStockMovementPayload {
+    quantity: number;
+    customerId: string;
+    customerName: string;
+    unitPrice: number;
+    priceKey: PriceKeyNumber;
+  }
+
+@Injectable({ providedIn: 'root' })
 export class ProductsService {
   private apiUrl = '/api/products';
-  
+
   constructor(private http: HttpClient) {}
 
   getProducts(): Observable<Product[]> {
@@ -45,9 +52,14 @@ export class ProductsService {
     return this.http.patch<Product>(`${this.apiUrl}/${id}`, productData);
   }
 
-  decreaseStock(productId: string, quantity: number): Observable<Product> {
-  return this.http.patch<Product>(`${this.apiUrl}/${productId}/decrease-stock`, {
-    quantity,});
+  decreaseStock(
+    productId: string,
+    payload: DecreaseStockMovementPayload
+  ): Observable<Product> {
+    return this.http.patch<Product>(
+      `${this.apiUrl}/${productId}/decrease-stock`,
+      payload
+    );
   }
 
   deleteProduct(id: string): Observable<void> {

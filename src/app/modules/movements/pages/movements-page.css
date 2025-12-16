@@ -1,36 +1,214 @@
+/* Layout general (evita que lo tape el navbar/sidenav) */
 .page-content {
-  padding: 16px;
+  margin-left: 230px;        /* ancho del sidenav */
+  padding: 24px;
+  padding-top: 80px;         /* alto del navbar */
+  box-sizing: border-box;
+  min-height: 100vh;
+  background: #f6f7fb;        /* fondo suave tipo sistema */
 }
 
-.filters {
+.page-header {
+  margin-bottom: 14px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+/* Card base */
+.card {
+  background: #fff;
+  border: 1px solid #e9e9ee;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+.filters-card {
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.filters-row {
   display: flex;
-  gap: 10px;
   align-items: center;
-  margin: 16px 0;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.filters-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filters-right .muted {
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .filter-label {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 13px;
+  color: #111827;
 }
 
 .filter-select {
-  min-width: 240px;
-  padding: 6px 10px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid #d6d6df;
+  background: #fff;
+  outline: none;
+}
+
+.filter-select:focus {
+  border-color: #9bbcff;
+  box-shadow: 0 0 0 3px rgba(120, 160, 255, 0.20);
+}
+
+/* Estado */
+.status-line {
+  margin: 10px 0;
+  color: #374151;
+  font-size: 14px;
 }
 
 .empty {
-  margin-top: 18px;
-  opacity: 0.8;
+  margin-top: 10px;
+  color: #6b7280;
+  font-size: 14px;
 }
 
-.pagination {
+/* Tabla “tipo sistema” */
+.table-card {
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow: auto; /* si algún día se achica, que scrollee horizontal */
+}
+
+.table-modern {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+
+.table-modern thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fbfbfe;
+  text-align: left;
+  padding: 12px 14px;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #6b7280;
+  border-bottom: 1px solid #ececf2;
+}
+
+.table-modern tbody td {
+  padding: 14px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f0f0f6; /* marca bien diferencia entre ventas */
+}
+
+/* filas con leve zebra */
+.table-modern tbody tr:nth-child(even) {
+  background: #fcfcff;
+}
+
+.table-modern tbody tr:hover {
+  background: #f6f9ff;
+}
+
+/* contenido dentro de celdas */
+.cell-main {
+  font-weight: 600;
+  color: #111827;
+}
+
+.cell-sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* “Píldoras” para estado/empleado (aunque hoy estén vacíos) */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pill-empty {
+  border-color: #e5e7eb;
+  background: #f9fafb;
+  color: #9ca3af;
+}
+
+/* Anchos sugeridos (para que “use todo el ancho” ordenado) */
+.col-client { width: 20%; }
+.col-product { width: 26%; }
+.col-price { width: 16%; }
+.col-date { width: 18%; }
+.col-status { width: 10%; }
+.col-employee { width: 10%; }
+
+/* Footer paginado */
+.table-footer {
   display: flex;
-  gap: 12px;
   align-items: center;
   justify-content: flex-end;
-  margin-top: 12px;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff;
 }
 
 .page-indicator {
-  opacity: 0.9;
+  font-size: 13px;
+  color: #374151;
+}
+
+/* Botones básicos (si ya tenés bootstrap, podés borrar esto) */
+.btn {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-light {
+  background: #fff;
+  border-color: #d6d6df;
+}
+
+.btn-light:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  filter: brightness(0.95);
 }

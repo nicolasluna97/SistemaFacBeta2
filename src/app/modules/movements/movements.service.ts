@@ -13,8 +13,8 @@ export class MovementsService {
   getMovements(dto: GetMovementsDto): Observable<MovementsResponse> {
     const params = new HttpParams()
       .set('range', dto.range)
-      .set('page', dto.page)
-      .set('limit', dto.limit);
+      .set('page', String(dto.page))
+      .set('limit', String(dto.limit));
 
     return this.http.get<MovementsResponse>(this.apiUrl, { params });
   }

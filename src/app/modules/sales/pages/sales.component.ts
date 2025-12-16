@@ -8,16 +8,16 @@ import { RouterModule } from '@angular/router';
 import { Navbar } from 'src/app/core/navbar/navbar';
 import { Sidenav } from 'src/app/core/sidenav/sidenav';
 
-// IMPORTS CORRECTOS (los tuyos)
 import {
   ProductsService,
   Product,
+  PriceKeyNumber,
+  DecreaseStockMovementPayload,
 } from 'src/app/modules/products/services/products.service';
 
 import { CustomersService } from '../../customers/services/customers.service';
 import { CustomerModel } from '../../../core/models/customers';
 import { forkJoin } from 'rxjs';
-
 
 type Step = 'customer' | 'select' | 'configure' | 'summary' | 'done';
 type PriceKey = 'price1' | 'price2' | 'price3' | 'price4';
@@ -78,7 +78,6 @@ export class SalesComponent implements OnInit {
     this.loadProducts();
   }
 
-  // ========== CARGA DE CLIENTES ==========
   loadCustomers() {
     this.loadingCustomers.set(true);
     this.customersError.set(null);
@@ -266,9 +265,11 @@ export class SalesComponent implements OnInit {
     this.step.set('configure');
   }
 
-confirmSale() {
-  // 1) Validación: no vender sin cliente
-  if (!this.selectedCustomer()) {
+  confirmSale() {
+  const customer = this.selectedCustomer();
+
+  // 1) Validación: cliente obligatorio
+  if (!customer) {
     this.customerError.set(true);
     this.step.set('customer');
     return;
@@ -285,18 +286,33 @@ confirmSale() {
   this.quantityError.set(false);
   this.saleError.set(null);
 
-  // 3) Requests para descontar stock (una por producto)
-  const requests = this.lines().map(line =>
-    this.productsSvc.decreaseStock(line.productId, line.quantity),
-  );
+  // helper: price1 | price2 | price3 | price4 -> 1 | 2 | 3 | 4
+  const toPriceKeyNumber = (k: PriceKey): PriceKeyNumber => {
+    switch (k) {
+      case 'price1': return 1;
+      case 'price2': return 2;
+      case 'price3': return 3;
+      case 'price4': return 4;
+    }
+  };
 
-  // 4) Ejecutar todo
+  // 3) requests: descontar stock + registrar movimiento
+  const requests = this.lines().map(line => {
+    const payload: DecreaseStockMovementPayload = {
+      quantity: line.quantity,
+      customerId: customer.id,        // ← ESTE ES EL CAMPO IMPORTANTE
+      customerName: customer.name,
+      unitPrice: this.getLineUnitPrice(line),
+      priceKey: toPriceKeyNumber(line.selectedPriceKey),
+    };
+
+    return this.productsSvc.decreaseStock(line.productId, payload);
+  });
+
+  // 4) ejecutar todo
   forkJoin(requests).subscribe({
     next: () => {
-      // refrescar productos (por si volvés a la selección)
       this.loadProducts();
-
-      // marcar finalizado
       this.step.set('done');
     },
     error: (err) => {
@@ -307,11 +323,11 @@ confirmSale() {
 
       this.saleError.set(String(msg));
       this.step.set('summary');
-    }
+    },
   });
 }
 
-newSale() {
+  newSale() {
   // Reiniciar todo SIN confirmación
   this.selectedCustomer.set(null);
   this.selectedIds.set(new Set());
