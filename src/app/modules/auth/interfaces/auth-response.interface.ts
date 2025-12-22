@@ -1,8 +1,12 @@
-import { User } from "./user.interface";
 
+export interface LoginResponse {
+  id: string;
+  email: string;
+  fullName?: string;
+  isActive?: boolean;
+  isEmailVerified?: boolean;
+  roles?: string[];
 
-export interface AuthResponse {
-    user: User;
-    token: string;
-    refreshToken: string; 
+  token: string;
+  refreshToken: string;
 }

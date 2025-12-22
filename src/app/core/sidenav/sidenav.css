@@ -1,85 +1,89 @@
-  .sidenav-container {
+.sidenav-container {
   font-family: Arial;
   background-color: #fbfbfb;
-  width: 200px;                
-  height: calc(100vh - 50px);  
+
+  width: 200px;
   position: fixed;
   left: 0;
-  top: 50px;                   
+  top: 50px; /* igual al height del navbar */
+
+  height: calc(100vh - 50px);
+  overflow-y: auto;    /* CLAVE: scroll interno */
+  overflow-x: hidden;
+
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  margin: 0;                    
+  margin: 0;
   transition: width 0.3s ease;
-  
-  @media (max-width: 768px) {
-    .sidenav-container {
-      width: 150px;
-    }
-  } 
-  
+}
+
+/* Responsive: achica el sidenav en pantallas chicas */
+@media (max-width: 768px) {
+  .sidenav-container {
+    width: 150px;
+  }
+
   .sidenav-container .btn-text {
     display: none;
   }
-  }
-  
-  .button-section-1{
-    margin-top: 40px;
-    }
-  
-  .button-section-2{
-    margin-top: 125px;
-  }
+}
 
-  .sidenav-button {
+.button-section-1 {
+  margin-top: 20px; /* antes 40px: reduce para que no “coma” alto */
+}
+
+.button-section-2 {
+  margin-top: 30px; /* antes 125px: esto era el que más te rompía */
+}
+
+.sidenav-button {
   font-family: Bahnschrift;
   font-weight: 600;
   font-size: 1.2rem;
   font-optical-sizing: 100;
   letter-spacing: 0.4px;
+
   color: #222;
   display: flex;
   align-items: center;
+
   width: 100%;
-  margin: 2px 2px 2px 2px;
+  margin: 2px;
   text-align: left;
-  padding: 20px 18px;
+
+  padding: 16px 18px; /* un poco menos para que entre mejor con escalado */
   background: none;
   border: none;
   cursor: pointer;
   text-decoration: none;
   transition: background-color 0.2s ease;
   gap: 5px;
+}
 
-  
-  &:hover {
-    background-color:#d4f1ff;
-  }
- 
-  
-  .btn-icon {
-    margin-right: 10px;
-    font-size: 20px; 
-  }
+.sidenav-button:hover {
+  background-color: #d4f1ff;
+}
 
-  .btn-text {
-    word-break: break-word;
-  }
-  
-  &:active{
+.sidenav-button:active {
   background-color: #73f1ff;
-  transform: scale(0.95);
+  transform: scale(0.99); /* menos “salto” visual */
 }
-  &.active-b{
+
+.sidenav-button.active-b {
   background-color: #a0f5ff;
-   font-weight: bold;
+  font-weight: bold;
 }
 
+.sidenav-button .btn-icon {
+  margin-right: 10px;
+  font-size: 20px;
+}
 
-
-
+.sidenav-button .btn-text {
+  word-break: break-word;
 }
 
 .title {
   font-weight: 520;
-    font-size: 1.2rem;
-    margin: 1px 2px 25px 17px;
-  }
+  font-size: 1.2rem;
+  margin: 10px 2px 20px 17px;
+}

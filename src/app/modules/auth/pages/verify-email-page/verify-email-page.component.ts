@@ -1,6 +1,4 @@
-// verify-email-page.component.ts
-
-// ...imports...
+// src/app/modules/auth/pages/verify-email-page/verify-email-page.component.ts
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -11,8 +9,14 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { finalize } from 'rxjs/operators';
+
 import { AuthService } from '../../services/auth.service';
+import {
+  VerifyEmailResponse,
+  ResendCodeResponse,
+} from '../../interfaces/auth.models';
 
 @Component({
   selector: 'app-verify-email-page',
@@ -20,10 +24,9 @@ import { AuthService } from '../../services/auth.service';
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './verify-email-page.component.html',
   styleUrl: './verify-email-page.component.css',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VerifyEmailPageComponent implements OnDestroy {
-
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
   private route = inject(ActivatedRoute);
@@ -37,7 +40,6 @@ export class VerifyEmailPageComponent implements OnDestroy {
 
   email: string = '';
 
-  // segundos de cooldown para el botón de reenvío
   resendCooldown = 0;
   private resendTimerId: any = null;
 
@@ -45,31 +47,26 @@ export class VerifyEmailPageComponent implements OnDestroy {
     code: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]],
   });
 
- constructor() {
-  const emailParam = this.route.snapshot.queryParamMap.get('email');
+  constructor() {
+    const emailParam = this.route.snapshot.queryParamMap.get('email');
 
-  if (!emailParam) {
-    this.serverError = 'No se recibió el email.';
-  } else {
-    this.email = emailParam;
-
-    // 🔹 APENAS LLEGAMOS A ESTA PANTALLA, ARRANCAMOS EL COOLDOWN
-    this.startCooldown(30);
+    if (!emailParam) {
+      this.serverError = 'No se recibió el email.';
+    } else {
+      this.email = emailParam;
+      this.startCooldown(30);
     }
   }
 
-
   ngOnDestroy(): void {
-    if (this.resendTimerId) {
-      clearInterval(this.resendTimerId);
-    }
+    if (this.resendTimerId) clearInterval(this.resendTimerId);
   }
 
   private startCooldown(seconds: number) {
     this.resendCooldown = seconds;
-    if (this.resendTimerId) {
-      clearInterval(this.resendTimerId);
-    }
+
+    if (this.resendTimerId) clearInterval(this.resendTimerId);
+
     this.resendTimerId = setInterval(() => {
       this.resendCooldown--;
       if (this.resendCooldown <= 0) {
@@ -81,7 +78,6 @@ export class VerifyEmailPageComponent implements OnDestroy {
     }, 1000);
   }
 
-  // 🔹 NUEVO: etiqueta formateada mm:ss para mostrar en la UI
   get resendCooldownLabel(): string {
     if (this.resendCooldown <= 0) return '';
     const minutes = Math.floor(this.resendCooldown / 60);
@@ -99,7 +95,6 @@ export class VerifyEmailPageComponent implements OnDestroy {
     }
 
     this.loading = true;
-
     const code = this.form.value.code!;
 
     this.auth.verifyEmail(this.email, code)
@@ -107,27 +102,28 @@ export class VerifyEmailPageComponent implements OnDestroy {
         finalize(() => {
           this.loading = false;
           this.cdr.markForCheck();
-        })
+        }),
       )
       .subscribe({
-        next: ok => {
-          if (ok) {
-            this.successMsg = '¡Email verificado correctamente! Redirigiendo...';
-            this.cdr.markForCheck();
+        next: (resp: VerifyEmailResponse) => {
+          // Verificación OK: backend devuelve tokens → guardamos sesión
+          this.auth.setSession(
+            { token: resp.token, refreshToken: resp.refreshToken },
+            resp
+          );
 
-            setTimeout(() => {
-              this.router.navigateByUrl('/');
-            }, 1200);
-          } else {
-            this.serverError = 'Código incorrecto o expirado.';
-            this.cdr.markForCheck();
-          }
+          this.successMsg = '¡Email verificado correctamente! Redirigiendo...';
+          this.cdr.markForCheck();
+
+          setTimeout(() => {
+            this.router.navigateByUrl('/inicio');
+          }, 1200);
         },
-        error: err => {
-          const msg = err?.error?.message || 'Código incorrecto.';
+        error: (err: HttpErrorResponse) => {
+          const msg = this.extractBackendMessage(err) || 'Código incorrecto o expirado.';
           this.serverError = msg;
           this.cdr.markForCheck();
-        }
+        },
       });
   }
 
@@ -138,27 +134,40 @@ export class VerifyEmailPageComponent implements OnDestroy {
     this.serverError = null;
     this.successMsg = null;
 
-    this.auth.resendVerificationCode(this.email).subscribe({
-      next: ok => {
-        this.resendLoading = false;
+    this.auth.resendVerificationCode(this.email)
+      .pipe(
+        finalize(() => {
+          this.resendLoading = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe({
+        next: (resp: ResendCodeResponse) => {
+          if (resp?.ok) {
+            this.successMsg = resp.message || 'Se envió un nuevo código a tu email.';
+            this.startCooldown(30);
+          } else {
+            this.serverError = 'No se pudo reenviar el código.';
+          }
+          this.cdr.markForCheck();
+        },
+        error: (err: HttpErrorResponse) => {
+          const msg = this.extractBackendMessage(err) || 'No se pudo reenviar el código.';
+          this.serverError = msg;
+          this.cdr.markForCheck();
+        },
+      });
+  }
 
-        if (ok) {
-          this.successMsg = 'Se envió un nuevo código a tu email.';
-          // arrancamos el cooldown de 30s
-          this.startCooldown(30);
-        } else {
-          this.serverError = 'No se pudo reenviar el código.';
-        }
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        this.resendLoading = false;
+  private extractBackendMessage(err: HttpErrorResponse): string {
+    const e: any = err.error;
+    if (!e) return '';
+    if (typeof e === 'string') return e;
 
-        const msg = err?.error?.message || 'No se pudo reenviar el código.';
-        this.serverError = msg;
+    const m = e.message;
+    if (Array.isArray(m)) return m.join(' | ');
+    if (typeof m === 'string') return m;
 
-        this.cdr.markForCheck();
-      }
-    });
+    return '';
   }
 }

@@ -1,20 +1,15 @@
+// src/app/modules/auth/guards/auth.guard.ts
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthService } from '../../products/services/auth.service';
+import { AuthService } from '../services/auth.service';
 
-export const authGuard: CanActivateFn = () => {
-  const authService = inject(AuthService);
+export const authGuard: CanActivateFn = (route, state) => {
+  const auth = inject(AuthService);
   const router = inject(Router);
 
-  console.log('🛡️ AuthGuard checking authentication...');
-  console.log('🛡️ Is authenticated:', authService.isAuthenticated());
+  if (auth.isAuthenticated()) return true;
 
-  if (authService.isAuthenticated()) {
-    console.log('🛡️ Access granted');
-    return true;
-  } else {
-    console.log('🛡️ Access denied - redirecting to login');
-    router.navigate(['/auth/login']);
-    return false;
-  }
+  return router.createUrlTree(['/auth/login'], {
+    queryParams: { returnUrl: state.url },
+  });
 };

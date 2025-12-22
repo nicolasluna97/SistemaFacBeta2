@@ -1,8 +1,9 @@
+// src/app/modules/auth/pages/register-page.component/register-page.component.ts
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
-  inject
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -11,17 +12,19 @@ import {
   ReactiveFormsModule,
   AbstractControl,
   ValidationErrors,
-  FormGroup
+  FormGroup,
 } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { finalize } from 'rxjs/operators';
+
 import { AuthService } from '../../services/auth.service';
+import { RegisterResponse } from '../../interfaces/auth.models';
 
 @Component({
   selector: 'app-register-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLinkActive, RouterLink, HttpClientModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLinkActive, RouterLink],
   templateUrl: './register-page.component.html',
   styleUrl: './register-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,20 +52,12 @@ export class RegisterPageComponent {
     this.form = this.fb.group(
       {
         fullName: this.fb.control('', {
-          validators: [
-            Validators.required,
-            Validators.minLength(2),
-            Validators.maxLength(20)
-          ],
+          validators: [Validators.required, Validators.minLength(2), Validators.maxLength(20)],
           nonNullable: true,
         }),
 
         email: this.fb.control('', {
-          validators: [
-            Validators.required,
-            Validators.email,
-            Validators.maxLength(100)
-          ],
+          validators: [Validators.required, Validators.email, Validators.maxLength(100)],
           nonNullable: true,
         }),
 
@@ -71,7 +66,7 @@ export class RegisterPageComponent {
             Validators.required,
             Validators.minLength(6),
             Validators.maxLength(50),
-            passwordComplexityValidator
+            passwordComplexityValidator,
           ],
           nonNullable: true,
         }),
@@ -86,25 +81,23 @@ export class RegisterPageComponent {
           nonNullable: true,
         }),
       },
-      { validators: [passwordsMatchValidator] }
+      { validators: [passwordsMatchValidator] },
     );
   }
 
-  // ====== GETTERS ======
   get fullName() { return this.form.controls['fullName']; }
   get email() { return this.form.controls['email']; }
   get password() { return this.form.controls['password']; }
   get confirmPassword() { return this.form.controls['confirmPassword']; }
   get terms() { return this.form.controls['terms']; }
 
-  // Checklist actualizado (coincide con el backend)
   get passChecks() {
     const v: string = this.password.value || '';
     return {
       len: v.length >= 6,
       upper: /[A-Z]/.test(v),
       lower: /[a-z]/.test(v),
-      numOrSymbol: /(\d|\W)/.test(v)
+      numOrSymbol: /(\d|\W)/.test(v),
     };
   }
 
@@ -112,43 +105,61 @@ export class RegisterPageComponent {
   toggleShowPass2() { this.showPass2 = !this.showPass2; this.cdr.markForCheck(); }
 
   submit() {
-  this.serverError = null;
-  if (this.form.invalid) {
-    this.form.markAllAsTouched();
-    return;
+    this.serverError = null;
+
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    this.loading = true;
+
+    const { fullName, email, password } = this.form.getRawValue() as {
+      fullName: string;
+      email: string;
+      password: string;
+      confirmPassword: string;
+      terms: boolean;
+    };
+
+    this.auth.register({ fullName, email, password })
+      .pipe(
+        finalize(() => {
+          this.loading = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe({
+        next: (resp: RegisterResponse) => {
+          // El backend devuelve { ok, message }. Si ok es true, vamos a verify-email
+          if (resp?.ok) {
+            this.router.navigate(['/auth/verify-email'], { queryParams: { email } });
+          } else {
+            this.serverError = resp?.message || 'No se pudo crear el usuario.';
+            this.cdr.markForCheck();
+          }
+        },
+        error: (err: HttpErrorResponse) => {
+          const msg = this.extractBackendMessage(err) || 'Ocurrió un error inesperado.';
+          this.serverError = msg;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
-  this.loading = true;
+  private extractBackendMessage(err: HttpErrorResponse): string {
+    const e: any = err.error;
+    if (!e) return '';
+    if (typeof e === 'string') return e;
 
-  const { fullName, email, password } = this.form.getRawValue() as {
-    fullName: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-    terms: boolean;
-  };
+    const m = e.message;
+    if (Array.isArray(m)) return m.join(' | ');
+    if (typeof m === 'string') return m;
 
-  this.auth.register({ fullName, email, password })
-    .pipe(
-      finalize(() => {
-        this.loading = false;
-        this.cdr.markForCheck();
-      })
-    )
-    .subscribe({
-      next: () => {
-        this.router.navigate(['/auth/verify-email'], {
-          queryParams: { email },
-        });
-      },
-      error: (err: any) => {
-        const msg = err?.error?.message || err?.message || 'Ocurrió un error inesperado.';
-        this.serverError = Array.isArray(msg) ? msg.join(' ') : String(msg);
-        this.cdr.markForCheck();
-      }
-    });
+    return '';
   }
 }
+
 /* ====== VALIDADORES ====== */
 
 function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
@@ -164,7 +175,5 @@ function passwordComplexityValidator(control: AbstractControl): ValidationErrors
   const hasLower = /[a-z]/.test(v);
   const hasNumOrSymbol = /(\d|\W)/.test(v);
 
-  return (hasUpper && hasLower && hasNumOrSymbol)
-    ? null
-    : { weakPassword: true };
+  return (hasUpper && hasLower && hasNumOrSymbol) ? null : { weakPassword: true };
 }

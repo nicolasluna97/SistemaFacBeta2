@@ -1,264 +1,102 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+// src/app/modules/auth/services/auth.service.ts
+import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { catchError, map, Observable, of, tap, throwError } from 'rxjs';
-import { User } from '../interfaces/user.interface';
-import { AuthResponse } from '../interfaces/auth-response.interface';
+import { Observable } from 'rxjs';
 
-type AuthStatus = 'checking' | 'authenticated' | 'not-authenticated';
-type LoginOutcome = 'ok' | 'wrong-password' | 'user-not-found' | 'db-connection' | 'unknown';
+import {
+  LoginResponse,
+  RegisterDto,
+  RegisterResponse,
+  VerifyEmailResponse,
+  ResendCodeResponse,
+  RefreshResponse,
+} from '../interfaces/auth.models';
+
+type JwtPayload = { exp?: number; [key: string]: any };
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly ACCESS_TOKEN_KEY = 'access_token';
+  private readonly REFRESH_TOKEN_KEY = 'refresh_token';
 
-  private _authStatus = signal<AuthStatus>('checking');
-  private _user = signal<User | null>(null);
-  private _token = signal<string | null>(null);
-  private http = inject(HttpClient);
+  user = signal<any | null>(null);
 
-  // Si más adelante usás proxy, podés cambiar esto a '/api'
-  private baseUrl = 'http://localhost:3000/api';
+  constructor(private http: HttpClient) {}
 
-  constructor() {
-    console.log('🎯 AuthService initialized with URL:', this.baseUrl);
-    this.checkAuthStatus();
+  // ========= HTTP (Auth API) =========
+
+  // Mantengo el nombre que tu login ya usa: loginDetailed(email, password)
+  loginDetailed(email: string, password: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>('/api/auth/login', { email, password });
   }
 
-  // ====== Getters útiles (opcionales para la UI) ======
-  get authStatus() { return this._authStatus; }
-  get user() { return this._user; }
-  get token() { return this._token; }
+  register(dto: RegisterDto): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>('/api/auth/register', dto);
+  }
+
+  verifyEmail(email: string, code: string): Observable<VerifyEmailResponse> {
+    return this.http.post<VerifyEmailResponse>('/api/auth/verify-email', { email, code });
+  }
+
+  resendVerificationCode(email: string): Observable<ResendCodeResponse> {
+    return this.http.post<ResendCodeResponse>('/api/auth/resend-code', { email });
+  }
+
+  refreshToken(refreshToken: string): Observable<RefreshResponse> {
+    return this.http.post<RefreshResponse>('/api/auth/refresh', { refreshToken });
+  }
+
+  // ========= Session / Tokens =========
+
+  getAccessToken(): string | null {
+    return localStorage.getItem(this.ACCESS_TOKEN_KEY);
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+  }
+
+  setSession(tokens: { token: string; refreshToken?: string }, user?: any) {
+    localStorage.setItem(this.ACCESS_TOKEN_KEY, tokens.token);
+
+    if (tokens.refreshToken) {
+      localStorage.setItem(this.REFRESH_TOKEN_KEY, tokens.refreshToken);
+    }
+
+    if (user !== undefined) this.user.set(user);
+  }
+
+  logout() {
+    localStorage.removeItem(this.ACCESS_TOKEN_KEY);
+    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+    this.user.set(null);
+  }
 
   isAuthenticated(): boolean {
-    return this._authStatus() === 'authenticated';
+    return this.isTokenValid(this.getAccessToken());
   }
 
-  // Al iniciar la app, solo miramos si hay token (simple)
-  private checkAuthStatus(): void {
-    const token = localStorage.getItem('token');
-    if (token) {
-      this._token.set(token);
-      this._authStatus.set('authenticated');
-    } else {
-      this._authStatus.set('not-authenticated');
+  // ========= Helpers =========
+
+  private isTokenValid(token: string | null): boolean {
+    if (!token) return false;
+    const payload = this.decodeJwtPayload(token);
+    if (!payload?.exp) return false;
+
+    const expMs = payload.exp * 1000;
+    return expMs > Date.now();
+  }
+
+  private decodeJwtPayload(token: string): JwtPayload | null {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+
+      const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const json = atob(payloadBase64);
+      return JSON.parse(json);
+    } catch {
+      return null;
     }
   }
-
-  getToken(): string | null {
-    return this._token();
-  }
-
-  logout(): void {
-    this._user.set(null);
-    this._token.set(null);
-    this._authStatus.set('not-authenticated');
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-  }
-
-  // =====================================================
-  // LOGIN SIMPLE (boolean)
-  // =====================================================
-  login(email: string, password: string): Observable<boolean> {
-    const url = `${this.baseUrl}/auth/login`;
-
-    console.log('🚀 === MAKING LOGIN REQUEST ===');
-    console.log('🚀 URL:', url);
-    console.log('🚀 Email:', email);
-
-    return this.http.post<AuthResponse>(url, {
-      email: email,
-      password: password
-    })
-      .pipe(
-        tap((resp) => {
-          console.log('✅ Login successful!');
-          this._user.set(resp.user);
-          this._authStatus.set('authenticated');
-          this._token.set(resp.token);
-          localStorage.setItem('token', resp.token);
-          localStorage.setItem('refreshToken', resp.refreshToken);
-        }),
-        map(() => true),
-        catchError((error: any) => {
-          console.error('❌ Login failed');
-          console.error('❌ Error status:', error.status);
-          console.error('❌ Error URL:', error.url);
-          this._user.set(null);
-          this._token.set(null);
-          this._authStatus.set('not-authenticated');
-          return of(false);
-        })
-      );
-  }
-
-  // =====================================================
-  // REGISTER (ahora SOLO crea usuario y envía código)
-  // NO guarda tokens ni marca authenticated
-  // =====================================================
-  register(dto: { fullName: string; email: string; password: string }): Observable<boolean> {
-    const url = `${this.baseUrl}/auth/register`;
-
-    console.log('📝 Register request:', dto);
-
-    return this.http.post<any>(url, dto).pipe(
-      tap((resp) => {
-        console.log('✅ Usuario creado, backend dice:', resp);
-        // resp = { ok: true, message: 'Usuario creado. Se envió un código...' }
-        // NO guardamos tokens ni usuario aquí
-      }),
-      map(() => true),
-      catchError((error) => {
-        console.error('❌ Error en register', error);
-        return of(false);
-      })
-    );
-  }
-
-  // =====================================================
-  // NUEVO: VERIFY EMAIL (email + código de 6 dígitos)
-  // Si todo ok, guarda tokens y marca authenticated
-  // =====================================================
-  verifyEmail(email: string, code: string): Observable<boolean> {
-    const url = `${this.baseUrl}/auth/verify-email`;
-
-    console.log('📩 Verifying email with code:', { email, code });
-
-    return this.http.post<any>(url, { email, code }).pipe(
-      tap((resp: any) => {
-        console.log('✅ Email verificado, respuesta backend:', resp);
-
-        // resp tiene: id, email, fullName, isActive, roles, token, refreshToken
-        const user: User = {
-          // Ajustá estos campos si tu interfaz User tiene otros nombres
-          id: resp.id,
-          email: resp.email,
-          fullName: resp.fullName,
-          roles: resp.roles,
-          isActive: resp.isActive,
-        } as User;
-
-        this._user.set(user);
-        this._authStatus.set('authenticated');
-        this._token.set(resp.token);
-
-        localStorage.setItem('token', resp.token);
-        localStorage.setItem('refreshToken', resp.refreshToken);
-      }),
-      map(() => true),
-      catchError((error) => {
-        console.error('❌ Error verificando email', error);
-        return of(false);
-      })
-    );
-  }
-
-  // =====================================================
-  // NUEVO: RESEND CODE (reenvía código de verificación)
-  // =====================================================
-  resendVerificationCode(email: string): Observable<boolean> {
-    const url = `${this.baseUrl}/auth/resend-code`;
-
-    console.log('🔁 Resending verification code to:', email);
-
-    return this.http.post<any>(url, { email }).pipe(
-      tap((resp) => {
-        console.log('✅ Código reenviado, respuesta backend:', resp);
-      }),
-      map(() => true),
-      catchError((error) => {
-        console.error('❌ Error reenviando código', error);
-        return of(false);
-      })
-    );
-  }
-
-  // =====================================================
-  // LOGIN con resultado tipado para mostrar mensajes
-  // =====================================================
-  loginDetailed(
-    email: string,
-    password: string
-  ): Observable<LoginOutcome> {
-
-    const url = `${this.baseUrl}/auth/login`;
-
-    console.log('🚀 === MAKING LOGIN REQUEST (detailed) ===');
-    console.log('🚀 URL:', url);
-    console.log('🚀 Email:', email);
-
-    return this.http.post<AuthResponse>(url, { email, password }).pipe(
-      tap((resp) => {
-        console.log('✅ Login successful (detailed)!');
-        this._user.set(resp.user);
-        this._authStatus.set('authenticated');
-        this._token.set(resp.token);
-        localStorage.setItem('token', resp.token);
-        localStorage.setItem('refreshToken', resp.refreshToken);
-      }),
-      map(() => 'ok' as const),
-      catchError((error: any) => {
-        console.error('❌ Login failed (detailed)');
-        console.error('❌ Error status:', error?.status);
-        console.error('❌ Error URL:', error?.url);
-
-        this._user.set(null);
-        this._token.set(null);
-        this._authStatus.set('not-authenticated');
-
-        const rawMsg = error?.error?.message;
-        const msg = Array.isArray(rawMsg)
-          ? rawMsg.join(' ').toLowerCase()
-          : (typeof rawMsg === 'string' ? rawMsg.toLowerCase() : '');
-
-        const code = (error?.error?.code || '').toString().toLowerCase();
-
-        if (msg.includes('credentials') && msg.includes('password')) return of('wrong-password' as const);
-        if (msg.includes('credentials') && msg.includes('email'))    return of('user-not-found' as const);
-        if (msg.includes('wrong_password') || code.includes('wrong_password') || code.includes('invalid_credentials')) {
-          return of('wrong-password' as const);
-        }
-        if (msg.includes('user not found') || code.includes('user_not_found')) {
-          return of('user-not-found' as const);
-        }
-
-        if (error?.status === 404) return of('user-not-found' as const);
-        if (error?.status === 401) return of('wrong-password' as const);
-        if (error?.status === 0 || (error?.status >= 500 && error?.status < 600)) {
-          return of('db-connection' as const);
-        }
-
-        if (error?.status === 400 && msg.includes('credentials')) return of('wrong-password' as const);
-
-        return of('unknown' as const);
-      })
-    );
-  }
-
-  // =====================================================
-  // REFRESH TOKEN (ya lo tenías, casi igual)
-  // =====================================================
-  refreshToken(): Observable<{ token: string; refreshToken: string }> {
-    const url = `${this.baseUrl}/auth/refresh`;
-    const refreshToken = localStorage.getItem('refreshToken');
-
-    if (!refreshToken) {
-      console.warn('❌ No refresh token found in localStorage');
-      return throwError(() => new Error('No refresh token found'));
-    }
-
-    console.log('🔁 Requesting refresh token...');
-
-    return this.http.post<{ token: string; refreshToken: string }>(
-      url,
-      { refreshToken },
-    ).pipe(
-      tap((resp) => {
-        console.log('✅ Token refreshed successfully');
-        localStorage.setItem('token', resp.token);
-        localStorage.setItem('refreshToken', resp.refreshToken);
-        this._token.set(resp.token);
-      })
-    );
-  }
-
 }

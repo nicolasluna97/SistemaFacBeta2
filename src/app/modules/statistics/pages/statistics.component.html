@@ -1,6 +1,59 @@
 <app-navbar></app-navbar>
 <app-sidenav></app-sidenav>
+<div class="stats-page">
+  <h1 class="page-title">Estadísticas</h1>
 
-<div class="prueba-e">
-    <h1>Estadisticas</h1>
+  <div class="filters">
+    <label>
+      Ver:
+      <select [value]="mode()" (change)="onChangeMode($any($event.target).value)">
+        <option value="day">Por día</option>
+        <option value="week">Por semana</option>
+        <option value="month">Por mes</option>
+        <option value="year">Por año</option>
+      </select>
+    </label>
+
+    <!-- Dropdown 2: cambia según mode -->
+    <label *ngIf="mode() === 'day'">
+      Día:
+      <input type="date" [value]="dayInput()" (change)="onChangeDay($any($event.target).value)" />
+    </label>
+
+    <label *ngIf="mode() === 'week'">
+      Semana:
+      <input type="date" [value]="weekAnchorInput()" (change)="onChangeWeekAnchor($any($event.target).value)" />
+    </label>
+
+    <label *ngIf="mode() === 'month'">
+      Mes:
+      <input
+        type="month"
+        [value]="monthInput()"
+        (change)="onChangeMonth($any($event.target).value)"
+      />
+    </label>
+
+
+    <label *ngIf="mode() === 'year'">
+      Año:
+      <select [value]="year()" (change)="onChangeYear($any($event.target).value)">
+        <option *ngFor="let y of yearsList()" [value]="y">{{ y }}</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-box">
+      <div class="kpi-label">Cantidad de ventas</div>
+      <div class="kpi-value">
+        {{ totalAmount() | number:'1.0-0' }}$
+        <span class="kpi-sub">| {{ totalCount() }} ventas totales</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <canvas #chartCanvas></canvas>
+  </div>
 </div>

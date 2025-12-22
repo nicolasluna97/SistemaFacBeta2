@@ -1,17 +1,20 @@
+// src/app/modules/auth/pages/login/login.component.ts
 import { Component, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
-import { HttpClientModule } from '@angular/common/http';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { finalize } from 'rxjs/operators';
+
 import { AuthService } from '../../services/auth.service';
+import { LoginResponse } from '../../interfaces/auth.models';
 
 type ServerErrorKind = 'wrong-password' | 'user-not-found' | 'db-connection' | 'unknown';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, HttpClientModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css'],
 })
@@ -19,6 +22,7 @@ export class LoginComponent {
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
 
   loading = false;
@@ -33,7 +37,6 @@ export class LoginComponent {
   get password() { return this.loginForm.controls.password; }
 
   onSubmit() {
-    // evita dobles submits por Enter + click
     if (this.loading) return;
 
     this.serverError = null;
@@ -44,65 +47,73 @@ export class LoginComponent {
     }
 
     this.loading = true;
-    const { email, password } = this.loginForm.getRawValue()!;
-
-    console.log('▶️ Intentando login (detailed) con', email);
+    const { email, password } = this.loginForm.getRawValue();
 
     this.auth.loginDetailed(email!, password!)
       .pipe(
         finalize(() => {
           this.loading = false;
-          console.log('⏹ finalize(): loading = false');
-          // fuerza actualización de la vista por si el detector no se dispara
           this.cdr.detectChanges();
-        })
+        }),
       )
       .subscribe({
-        next: (outcome) => {
-          console.log('✅ Resultado login:', outcome);
+        next: (resp: LoginResponse) => {
+          // Login OK: guardamos sesión real (tokens + user)
+          this.auth.setSession(
+            { token: resp.token, refreshToken: resp.refreshToken },
+            resp
+          );
 
-          switch (outcome) {
-            case 'ok':
-              this.router.navigateByUrl('/');
-              break;
+          // Si venías redirigido por guard, volvemos a returnUrl
+          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+          this.router.navigateByUrl(returnUrl || '/inicio');
 
-            case 'wrong-password':
-              this.serverError = {
-                kind: 'wrong-password',
-                message: 'La contraseña es incorrecta. Verificala e intentá de nuevo.'
-              };
-              break;
-
-            case 'user-not-found':
-              this.serverError = {
-                kind: 'user-not-found',
-                message: 'No encontramos una cuenta con ese email. ¿Querés registrarte?'
-              };
-              break;
-
-            case 'db-connection':
-              this.serverError = {
-                kind: 'db-connection',
-                message: 'No pudimos conectarnos. Intentalo más tarde.'
-              };
-              break;
-
-            default:
-              this.serverError = {
-                kind: 'unknown',
-                message: 'Ocurrió un error inesperado. Probá nuevamente.'
-              };
-          }
-
-          // por si el cambio de serverError no se refleja de inmediato
           this.cdr.detectChanges();
         },
-        error: (err) => {
-          // en principio no debería entrar acá porque loginDetailed ya hace catchError
-          console.error('🛑 Error inesperado en subscribe:', err);
-          this.serverError = { kind: 'unknown', message: 'Ocurrió un error inesperado. Probá nuevamente.' };
+        error: (err: HttpErrorResponse) => {
+          // Login falló: mapeamos mensajes según el backend (Nest UnauthorizedException etc.)
+          const msg = this.extractBackendMessage(err);
+
+          if (msg.includes('password')) {
+            this.serverError = {
+              kind: 'wrong-password',
+              message: 'La contraseña es incorrecta. Verificala e intentá de nuevo.',
+            };
+          } else if (msg.includes('email') || msg.includes('no encontrado') || msg.includes('not found')) {
+            this.serverError = {
+              kind: 'user-not-found',
+              message: 'No encontramos una cuenta con ese email. ¿Querés registrarte?',
+            };
+          } else if (err.status === 0 || msg.includes('ECONN') || msg.includes('connect')) {
+            this.serverError = {
+              kind: 'db-connection',
+              message: 'No pudimos conectarnos. Intentalo más tarde.',
+            };
+          } else {
+            this.serverError = {
+              kind: 'unknown',
+              message: msg || 'Ocurrió un error inesperado. Probá nuevamente.',
+            };
+          }
+
           this.cdr.detectChanges();
-        }
+        },
       });
+  }
+
+  private extractBackendMessage(err: HttpErrorResponse): string {
+    // Nest suele devolver { message: string | string[] }
+    const e: any = err.error;
+
+    if (!e) return '';
+
+    if (typeof e === 'string') return e;
+
+    const m = e.message;
+    if (Array.isArray(m)) return m.join(' | ');
+    if (typeof m === 'string') return m;
+
+    // fallback
+    return '';
   }
 }
