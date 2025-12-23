@@ -1,5 +1,6 @@
 <app-navbar></app-navbar>
 <app-sidenav></app-sidenav>
+
 <div class="stats-page">
   <h1 class="page-title">Estadísticas</h1>
 
@@ -14,7 +15,6 @@
       </select>
     </label>
 
-    <!-- Dropdown 2: cambia según mode -->
     <label *ngIf="mode() === 'day'">
       Día:
       <input type="date" [value]="dayInput()" (change)="onChangeDay($any($event.target).value)" />
@@ -27,13 +27,8 @@
 
     <label *ngIf="mode() === 'month'">
       Mes:
-      <input
-        type="month"
-        [value]="monthInput()"
-        (change)="onChangeMonth($any($event.target).value)"
-      />
+      <input type="month" [value]="monthInput()" (change)="onChangeMonth($any($event.target).value)" />
     </label>
-
 
     <label *ngIf="mode() === 'year'">
       Año:
@@ -41,6 +36,14 @@
         <option *ngFor="let y of yearsList()" [value]="y">{{ y }}</option>
       </select>
     </label>
+  </div>
+
+  <div *ngIf="loading()" style="margin: 10px 0;">
+    Cargando estadísticas...
+  </div>
+
+  <div *ngIf="errorMsg()" style="margin: 10px 0; color: #b00020;">
+    {{ errorMsg() }}
   </div>
 
   <div class="kpi">
@@ -53,7 +56,7 @@
     </div>
   </div>
 
-  <div class="chart-card">
+  <div class="chart-card" style="height: 340px;">
     <canvas #chartCanvas></canvas>
   </div>
 </div>

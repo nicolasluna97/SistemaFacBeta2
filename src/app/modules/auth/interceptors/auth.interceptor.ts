@@ -1,4 +1,4 @@
-
+// src/app/modules/auth/interceptors/auth.interceptor.ts
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
@@ -11,8 +11,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   const token = auth.getAccessToken();
 
-  // Adjuntamos token SOLO a /api/... (como tus requests)
-  const isApiCall = req.url.startsWith('/api/');
+  // ✅ sirve para '/api/...' y para 'http://localhost:3000/api/...'
+  const isApiCall = req.url.includes('/api/');
 
   const authReq =
     token && isApiCall
@@ -21,12 +21,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((err) => {
-      // Si el backend dice 401/403: sesión inválida → limpiar y forzar login
       if (err?.status === 401 || err?.status === 403) {
         auth.logout();
-        router.navigate(['/auth/login'], {
-          queryParams: { returnUrl: router.url },
-        });
+
+        const current = router.url || '';
+        if (!current.startsWith('/auth/')) {
+          router.navigate(['/auth/login'], { queryParams: { returnUrl: current } });
+        } else {
+          router.navigate(['/auth/login']);
+        }
       }
       return throwError(() => err);
     }),
