@@ -198,3 +198,31 @@
   border-radius: 14px;
   padding: 12px 14px;
 }
+
+
+.panel-content{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.panel-img{
+  width: 500px;      
+  max-width: 45%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 18px rgba(16, 24, 40, 0.08);
+  background: #fff;
+}
+
+@media (max-width: 900px){
+  .panel-content{
+    flex-direction: column;
+  }
+  .panel-img{
+    width: 100%;
+    max-width: 520px;
+  }
+}
