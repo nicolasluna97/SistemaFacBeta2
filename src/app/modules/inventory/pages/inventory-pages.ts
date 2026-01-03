@@ -33,35 +33,41 @@ export class InventoryPages implements OnInit {
   showConfirmDelete = false;
 
   // -------- NUEVO PRODUCTO --------
-  newProduct: any = {
+    newProduct: any = {
     title: '',
     stock: null,
+    purchasePrice: null,
     price: null,
     price2: null,
     price3: null,
     price4: null
   };
 
-  newProductErrors = {
-    title: '',
-    stock: '',
-    price: '',
-    price2: '',
-    price3: '',
-    price4: ''
-  };
+
+    newProductErrors = {
+      title: '',
+      stock: '',
+      purchasePrice: '',
+      price: '',
+      price2: '',
+      price3: '',
+      price4: ''
+    };
+
 
   // errores por fila al editar
   editedErrors: {
-    [id: string]: {
-      title?: string;
-      stock?: string;
-      price?: string;
-      price2?: string;
-      price3?: string;
-      price4?: string;
-    }
+  [id: string]: {
+    title?: string;
+    stock?: string;
+    purchasePrice?: string;
+    price?: string;
+    price2?: string;
+    price3?: string;
+    price4?: string;
+  }
   } = {};
+
 
   constructor(private productsSvc: ProductsService) {}
 
@@ -105,14 +111,16 @@ export class InventoryPages implements OnInit {
   private validateNewProduct(): boolean {
     let valid = true;
 
-    this.newProductErrors = {
+        this.newProductErrors = {
       title: '',
       stock: '',
+      purchasePrice: '',
       price: '',
       price2: '',
       price3: '',
       price4: ''
     };
+
 
     const title = (this.newProduct.title || '').trim();
     if (!title) {
@@ -133,6 +141,7 @@ export class InventoryPages implements OnInit {
     };
 
     checkField('stock');
+    checkField('purchasePrice');
     checkField('price');
     checkField('price2');
     checkField('price3');
@@ -161,7 +170,7 @@ export class InventoryPages implements OnInit {
         p.title = title;
       }
 
-      const checkField = (field: 'stock' | 'price' | 'price2' | 'price3' | 'price4') => {
+      const checkField = (field: 'stock' | 'purchasePrice' | 'price' | 'price2' | 'price3' | 'price4') => {
         const value: any = (p as any)[field];
         const normalized = this.normalizeNumber(value);
         if (normalized === 'invalid') {
@@ -173,6 +182,7 @@ export class InventoryPages implements OnInit {
       };
 
       checkField('stock');
+      checkField('purchasePrice');
       checkField('price');
       checkField('price2');
       checkField('price3');
@@ -188,11 +198,12 @@ export class InventoryPages implements OnInit {
 
   // ========= FORMULARIO AGREGAR =========
 
-  openAddForm() {
+   openAddForm() {
     this.showAddForm = true;
     this.newProduct = {
       title: '',
       stock: null,
+      purchasePrice: null,
       price: null,
       price2: null,
       price3: null,
@@ -201,6 +212,7 @@ export class InventoryPages implements OnInit {
     this.newProductErrors = {
       title: '',
       stock: '',
+      purchasePrice: '',
       price: '',
       price2: '',
       price3: '',
@@ -208,30 +220,53 @@ export class InventoryPages implements OnInit {
     };
   }
 
+
   closeAddForm() {
     this.showAddForm = false;
   }
 
-  saveNewProduct() {
-    if (!this.validateNewProduct()) return;
+// guardar nuevo producto
 
-    this.loading = true;
+saveNewProduct() {
+  if (!this.validateNewProduct()) return;
 
-    this.productsSvc.createProduct(this.newProduct).subscribe({
-      next: (product) => {
-        this.loading = false;
-        this.showAddForm = false;
-        this.products.push(product);
-        this.editedProducts = JSON.parse(JSON.stringify(this.products));
-        this.editedErrors = {};
-      },
-      error: (err) => {
-        console.error('Error creando producto', err);
-        this.loading = false;
-        alert('No se pudo crear el producto.');
+  this.loading = true;
+
+  this.newProductErrors.title = '';
+
+  this.productsSvc.createProduct(this.newProduct).subscribe({
+    next: (product) => {
+      this.loading = false;
+      this.showAddForm = false;
+
+      this.products.push(product);
+      this.editedProducts = JSON.parse(JSON.stringify(this.products));
+      this.editedErrors = {};
+    },
+    error: (err) => {
+      this.loading = false;
+
+      const msg = (err?.error?.message || err?.error || err?.message || '').toString().toLowerCase();
+
+      const isDuplicate =
+        err?.status === 409 ||
+        msg.includes('duplicate') ||
+        msg.includes('unique') ||
+        msg.includes('already exists') ||
+        msg.includes('already') ||
+        msg.includes('ya existe') ||
+        msg.includes('23505');
+
+      if (isDuplicate) {
+        this.newProductErrors.title =
+          'Ya tienes un producto con este nombre, intenta agregarle algún símbolo o otra letra';
+        return;
       }
-    });
-  }
+
+      alert('No se pudo crear el producto.');
+    }
+  });
+}
 
   // ========= EDITAR =========
 
@@ -283,14 +318,16 @@ export class InventoryPages implements OnInit {
       if (!idsToUpdate.has(p.id)) continue;
 
       try {
-        await this.productsSvc.updateProduct(p.id, {
-          title: p.title,
-          stock: p.stock,
-          price: p.price,
-          price2: p.price2,
-          price3: p.price3,
-          price4: p.price4
-        }).toPromise();
+       await this.productsSvc.updateProduct(p.id, {
+        title: p.title,
+        stock: p.stock,
+        purchasePrice: p.purchasePrice,
+        price: p.price,
+        price2: p.price2,
+        price3: p.price3,
+        price4: p.price4
+      }).toPromise();
+
       } catch (e) {
         console.error(e);
         errors++;
@@ -392,4 +429,20 @@ export class InventoryPages implements OnInit {
     if (checked) this.selectedIds.add(id);
     else this.selectedIds.delete(id);
   }
+
+ getProfitPercent(purchase: any, sale: any): number | null {
+  const buy = Number(purchase ?? 0);
+  const sell = Number(sale ?? 0);
+
+  if (!Number.isFinite(buy) || buy <= 0) return null;
+  if (!Number.isFinite(sell) || sell <= 0) return null;
+
+  const pct = ((sell - buy) / buy) * 100;
+
+  // Si NO querés mostrar negativos, descomentá esto:
+  // if (pct < 0) return null;
+
+  return Math.round(pct * 10) / 10; // 1 decimal
+}
+
 }

@@ -1,7 +1,5 @@
 /* inventory.component.css */
 
-/* Solo cosas específicas de inventario (layout ya está en styles.css) */
-
 .col-select{
   width: 40px;
   text-align: center;
@@ -17,4 +15,22 @@ table input[type="number"]{
   height: 32px;
   padding: 0 8px;
   font-size: 13px;
+}
+
+.modal-subtitle{
+  margin-top: 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.profit-hint{
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #16a34a;
 }
