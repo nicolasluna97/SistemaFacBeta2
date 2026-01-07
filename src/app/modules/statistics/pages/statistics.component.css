@@ -1,4 +1,45 @@
 .kpi-success{
-  background: #f0fdf4; /* verde muy claro */
-  border-color: #30ff79; /* borde verde suave */
+  background: #f0fdf4;
+  border-color: #30ff79;
+}
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.kpi-box {
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+
+.kpi-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
+}
+
+.kpi-value {
+  font-size: 26px;
+  font-weight: 800;
+  margin-top: 6px;
+}
+
+.kpi-sub {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.kpi-info {
+  background: #dbe9fb;
+  border-color: #8ec1ff;
+}
+
+@media (max-width: 900px) {
+  .kpi-row {
+    grid-template-columns: 1fr;
+  }
 }

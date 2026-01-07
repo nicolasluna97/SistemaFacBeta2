@@ -54,13 +54,38 @@
   </div>
 
   <!-- KPI -->
-  <div class="kpi-box kpi-success" style="margin-bottom: 14px;">
-    <div class="kpi-label">Cantidad de ventas</div>
+<!-- KPI ROW -->
+<div class="kpi-row">
+  <!-- KPI 1: Ventas -->
+  <div class="kpi-box kpi-success">
+    <div class="kpi-label">Ventas</div>
     <div class="kpi-value">
       {{ totalAmount() | number:'1.0-0' }}$
-      <span class="kpi-sub">| {{ totalCount() }} ventas totales</span>
+    </div>
+    <div class="kpi-sub">
+      {{ totalCount() }} ventas totales
     </div>
   </div>
+
+  <!-- KPI 2: Productos vendidos -->
+  <div class="kpi-box kpi-info">
+    <div class="kpi-label">Productos vendidos</div>
+    <div class="kpi-value">
+      {{ totalProducts() | number:'1.0-0' }}
+    </div>
+    <div class="kpi-sub">
+    </div>
+  </div>
+
+  <!-- KPI 3: Ganancias -->
+  <div class="kpi-box kpi-success">
+    <div class="kpi-label">Ganancias</div>
+    <div class="kpi-value">
+      {{ totalProfit() | number:'1.0-0' }}$
+    </div>
+  </div>
+</div>
+
 
   <!-- Chart card -->
   <div class="card" style="padding: 12px; height: 360px;">

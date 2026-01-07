@@ -51,6 +51,8 @@ export class StatisticsComponent implements AfterViewInit, OnDestroy {
   // ===== KPI =====
   totalAmount = signal<number>(0);
   totalCount = signal<number>(0);
+  totalProfit = signal<number>(0);
+  totalProducts = signal<number>(0);
 
   // ===== Chart =====
   @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
@@ -115,6 +117,8 @@ export class StatisticsComponent implements AfterViewInit, OnDestroy {
           // KPI
           this.totalAmount.set(Number(res.totalAmount ?? 0));
           this.totalCount.set(Number(res.totalSales ?? 0));
+          this.totalProfit.set(Number(res.totalProfit ?? 0));
+          this.totalProducts.set(Number(res.totalProducts ?? 0));
 
           // Chart
           this.updateChart(res.labels ?? [], (res.values ?? []).map(v => Number(v)));
