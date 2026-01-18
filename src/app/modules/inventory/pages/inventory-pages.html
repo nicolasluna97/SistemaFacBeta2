@@ -5,7 +5,6 @@
   <h1 class="page-title">Inventario</h1>
 
   <div class="card" style="padding: 14px 16px; margin-bottom: 14px;">
-    <!-- Toolbar -->
     <div class="filters-row">
       <div class="filters-left">
         <button class="btn btn-add"
@@ -37,6 +36,7 @@
           <tr>
             <th *ngIf="editMode || deleteMode" class="col-select"></th>
             <th>Nombre</th>
+            <th>Categoría</th>
             <th>Stock</th>
             <th>Compra</th>
             <th>Precio 1</th>
@@ -49,7 +49,9 @@
         <tbody>
           <!-- Sin productos -->
           <tr *ngIf="products.length === 0">
-            <td [attr.colspan]="(editMode || deleteMode) ? 8 : 7" class="muted" style="padding: 18px;">
+            <td [attr.colspan]="(editMode || deleteMode) ? 9 : 8"
+                class="muted"
+                style="padding: 18px;">
               Todavía no hay productos cargados.
             </td>
           </tr>
@@ -86,6 +88,11 @@
               </ng-template>
             </td>
 
+            <!-- Categoría (solo lectura por ahora) -->
+            <td>
+              {{ getCategoryName(p.categoryId) }}
+            </td>
+
             <!-- Stock -->
             <td>
               <ng-container *ngIf="editMode && isEditSelected(p.id); else stockRead">
@@ -102,23 +109,23 @@
               </ng-template>
             </td>
 
-            <!-- Precio de compra -->
-          <td>
-            <ng-container *ngIf="editMode && isEditSelected(p.id); else purchaseRead">
-              <input type="number"
-                    min="0"
-                    step="0.01"
-                    [(ngModel)]="editedProducts[i].purchasePrice"
-                    [class.input-error]="editedErrors[p.id]?.purchasePrice" />
-              <div class="error-message" *ngIf="editedErrors[p.id]?.purchasePrice">
-                {{ editedErrors[p.id]?.purchasePrice }}
-              </div>
-            </ng-container>
+            <!-- Compra -->
+            <td>
+              <ng-container *ngIf="editMode && isEditSelected(p.id); else purchaseRead">
+                <input type="number"
+                       min="0"
+                       step="0.01"
+                       [(ngModel)]="editedProducts[i].purchasePrice"
+                       [class.input-error]="editedErrors[p.id]?.purchasePrice" />
+                <div class="error-message" *ngIf="editedErrors[p.id]?.purchasePrice">
+                  {{ editedErrors[p.id]?.purchasePrice }}
+                </div>
+              </ng-container>
 
-            <ng-template #purchaseRead>
-              {{ (p.purchasePrice ?? 0) | currency:'ARS':'symbol-narrow':'1.2-2' }}
-            </ng-template>
-          </td>
+              <ng-template #purchaseRead>
+                {{ (p.purchasePrice ?? 0) | currency:'ARS':'symbol-narrow':'1.2-2' }}
+              </ng-template>
+            </td>
 
             <!-- Precio 1 -->
             <td>
@@ -210,138 +217,191 @@
 <!-- MODAL PARA AGREGAR PRODUCTO -->
 <div class="modal-backdrop" *ngIf="showAddForm">
   <div class="modal-card">
-    <h2>Agregar producto</h2>
+    <h2 class="modal-title">Agregar producto</h2>
 
-    <label>
-      Nombre del producto *
-      <input type="text"
-        [(ngModel)]="newProduct.title"
-        (ngModelChange)="newProductErrors.title = ''"
-        placeholder="Ej: Coca Cola lata"
-        class="modal-input"
-        [class.input-error]="newProductErrors.title" />
-      <div class="error-message" *ngIf="newProductErrors.title">
-        {{ newProductErrors.title }}
-      </div>
-    </label>
-
-    <label>
-      Stock inicial
-      <input type="number"
-             min="0"
-             [(ngModel)]="newProduct.stock"
-             class="modal-input"
-             [class.input-error]="newProductErrors.stock" />
-      <div class="error-message" *ngIf="newProductErrors.stock">
-        {{ newProductErrors.stock }}
-      </div>
-    </label>
-
-        <label>
-      Precio de compra
-      <input type="number"
-             min="0"
-             step="0.01"
-             [(ngModel)]="newProduct.purchasePrice"
-             class="modal-input"
-             [class.input-error]="newProductErrors.purchasePrice" />
-        <div class="error-message" *ngIf="newProductErrors.purchasePrice">
-        {{ newProductErrors.purchasePrice }}
+    <!-- BODY SCROLL -->
+    <div class="modal-body">
+      <label>
+        Nombre del producto *
+        <input type="text"
+               [(ngModel)]="newProduct.title"
+               (ngModelChange)="newProductErrors.title = ''"
+               placeholder="Ej: Coca Cola lata"
+               class="modal-input"
+               [class.input-error]="newProductErrors.title" />
+        <div class="error-message" *ngIf="newProductErrors.title">
+          {{ newProductErrors.title }}
         </div>
-    </label>
+      </label>
 
-    <div class="modal-subtitle">Precio de venta</div>
+      <label>
+        Stock inicial
+        <input type="number"
+               min="0"
+               [(ngModel)]="newProduct.stock"
+               class="modal-input"
+               [class.input-error]="newProductErrors.stock" />
+        <div class="error-message" *ngIf="newProductErrors.stock">
+          {{ newProductErrors.stock }}
+        </div>
+      </label>
 
-  <label>
-      Precio 1
-      <input type="number"
-             min="0"
-             step="0.01"
-             [(ngModel)]="newProduct.price"
-             class="modal-input"
-             [class.input-error]="newProductErrors.price" />
-      <div class="error-message" *ngIf="newProductErrors.price">
-        {{ newProductErrors.price }}
+      <label>
+        Seleccionar categoría *
+        <select class="modal-input"
+                [ngModel]="newProduct.categoryId"
+                (ngModelChange)="onCategorySelectChange($event)">
+          <option value="__add__">+ Crear una nueva categoría</option>
+          <option *ngFor="let c of categories" [value]="c.id">
+            {{ c.name }}
+          </option>
+        </select>
+
+        <div class="error-message" *ngIf="newProductErrors.categoryId">
+          {{ newProductErrors.categoryId }}
+        </div>
+      </label>
+
+      <!-- crear categoría dentro del modal -->
+      <div *ngIf="showCreateCategory" style="margin-top: 8px;">
+        <label>
+          Nueva categoría *
+          <input type="text"
+                 class="modal-input"
+                 [(ngModel)]="newCategoryName"
+                 (ngModelChange)="newCategoryError = ''"
+                 placeholder="Ej: Bolsas" />
+        </label>
+
+        <div class="error-message" *ngIf="newCategoryError">
+          {{ newCategoryError }}
+        </div>
+
+        <div class="modal-actions" style="justify-content: flex-start; gap: 8px; margin-top: 8px;">
+          <button type="button"
+                  class="btn btn-cancel"
+                  (click)="cancelCreateCategory()"
+                  [disabled]="creatingCategory">
+            Cancelar
+          </button>
+
+          <button type="button"
+                  class="btn btn-add"
+                  (click)="createCategoryFromModal()"
+                  [disabled]="creatingCategory">
+            Crear
+          </button>
+        </div>
+      </div>
+
+      <label>
+        Precio de compra
+        <input type="number"
+               min="0"
+               step="0.01"
+               [(ngModel)]="newProduct.purchasePrice"
+               class="modal-input"
+               [class.input-error]="newProductErrors.purchasePrice" />
+        <div class="error-message" *ngIf="newProductErrors.purchasePrice">
+          {{ newProductErrors.purchasePrice }}
+        </div>
+      </label>
+
+      <div class="modal-subtitle">Precio de venta</div>
+
+      <label>
+        Precio 1
+        <input type="number"
+               min="0"
+               step="0.01"
+               [(ngModel)]="newProduct.price"
+               class="modal-input"
+               [class.input-error]="newProductErrors.price" />
+        <div class="error-message" *ngIf="newProductErrors.price">
+          {{ newProductErrors.price }}
+        </div>
+        <small class="profit-hint"
+               *ngIf="getProfitPercent(newProduct.purchasePrice, newProduct.price) !== null">
+          {{ getProfitPercent(newProduct.purchasePrice, newProduct.price) }}%
+        </small>
+      </label>
+
+      <label>
+        Precio 2
+        <input type="number"
+               min="0"
+               step="0.01"
+               [(ngModel)]="newProduct.price2"
+               class="modal-input"
+               [class.input-error]="newProductErrors.price2" />
+        <div class="error-message" *ngIf="newProductErrors.price2">
+          {{ newProductErrors.price2 }}
+        </div>
+        <small class="profit-hint"
+               *ngIf="getProfitPercent(newProduct.purchasePrice, newProduct.price2) !== null">
+          {{ getProfitPercent(newProduct.purchasePrice, newProduct.price2) }}%
+        </small>
+      </label>
+
+      <label>
+        Precio 3
+        <input type="number"
+               min="0"
+               step="0.01"
+               [(ngModel)]="newProduct.price3"
+               class="modal-input"
+               [class.input-error]="newProductErrors.price3" />
+        <div class="error-message" *ngIf="newProductErrors.price3">
+          {{ newProductErrors.price3 }}
+        </div>
+        <small class="profit-hint"
+               *ngIf="getProfitPercent(newProduct.purchasePrice, newProduct.price3) !== null">
+          {{ getProfitPercent(newProduct.purchasePrice, newProduct.price3) }}%
+        </small>
+      </label>
+
+      <label>
+        Precio 4
+        <input type="number"
+               min="0"
+               step="0.01"
+               [(ngModel)]="newProduct.price4"
+               class="modal-input"
+               [class.input-error]="newProductErrors.price4" />
+        <div class="error-message" *ngIf="newProductErrors.price4">
+          {{ newProductErrors.price4 }}
+        </div>
+        <small class="profit-hint"
+               *ngIf="getProfitPercent(newProduct.purchasePrice, newProduct.price4) !== null">
+          {{ getProfitPercent(newProduct.purchasePrice, newProduct.price4) }}%
+        </small>
+      </label>
     </div>
-      <small class="profit-hint"
-         *ngIf="getProfitPercent(newProduct.purchasePrice, newProduct.price) !== null">
-      {{ getProfitPercent(newProduct.purchasePrice, newProduct.price) }}%
-    </small>
-  </label>
 
+    <!-- FOOTER FIJO -->
+    <div class="modal-footer">
+      <div class="modal-actions">
+        <button class="btn btn-cancel"
+                type="button"
+                (click)="closeAddForm()"
+                [disabled]="loading">
+          Cancelar
+        </button>
 
-    <label>
-      Precio 2
-      <input type="number"
-             min="0"
-             step="0.01"
-             [(ngModel)]="newProduct.price2"
-             class="modal-input"
-             [class.input-error]="newProductErrors.price2" />
-      <div class="error-message" *ngIf="newProductErrors.price2">
-        {{ newProductErrors.price2 }}
-      </div>
-      <small class="profit-hint"
-         *ngIf="getProfitPercent(newProduct.purchasePrice, newProduct.price2) !== null">
-      {{ getProfitPercent(newProduct.purchasePrice, newProduct.price2) }}%
-    </small>
-  </label>
-
-  <label>
-      Precio 3
-      <input type="number"
-             min="0"
-             step="0.01"
-             [(ngModel)]="newProduct.price3"
-             class="modal-input"
-             [class.input-error]="newProductErrors.price3" />
-      <div class="error-message" *ngIf="newProductErrors.price3">
-        {{ newProductErrors.price3 }}
-      </div>
-      <small class="profit-hint"
-         *ngIf="getProfitPercent(newProduct.purchasePrice, newProduct.price3) !== null">
-      {{ getProfitPercent(newProduct.purchasePrice, newProduct.price3) }}%
-      </small>
-  </label>
-
-    <label>
-      Precio 4
-      <input type="number"
-             min="0"
-             step="0.01"
-             [(ngModel)]="newProduct.price4"
-             class="modal-input"
-             [class.input-error]="newProductErrors.price4" />
-      <div class="error-message" *ngIf="newProductErrors.price4">
-        {{ newProductErrors.price4 }}
-      </div>
-      <small class="profit-hint"
-         *ngIf="getProfitPercent(newProduct.purchasePrice, newProduct.price4) !== null">
-      {{ getProfitPercent(newProduct.purchasePrice, newProduct.price4) }}%
-      </small>
-    </label>
-    <br>
-
-    <div class="modal-actions">
-      <button class="btn btn-cancel"
-              type="button"
-              (click)="closeAddForm()"
-              [disabled]="loading">
-        Cancelar
-      </button>
-      <button class="btn btn-add"
-        type="button"
-        (click)="saveNewProduct()"
-        [disabled]="loading || !!newProductErrors.title">
+        <button class="btn btn-add"
+                type="button"
+                (click)="saveNewProduct()"
+                [disabled]="loading || !!newProductErrors.title || !newProduct.categoryId">
           Guardar
-      </button>
+        </button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- MODAL CONFIRMAR GUARDAR CAMBIOS -->
 <div class="modal-backdrop" *ngIf="showConfirmUpdate">
-  <div class="modal-card">
+  <div class="modal-card" style="max-height: none; overflow: visible;">
     <h2>Guardar cambios</h2>
     <p *ngIf="editSelectedIds.size === 1">
       ¿Deseas guardar los cambios del producto seleccionado?
@@ -369,7 +429,7 @@
 
 <!-- MODAL CONFIRMAR ELIMINAR -->
 <div class="modal-backdrop" *ngIf="showConfirmDelete">
-  <div class="modal-card">
+  <div class="modal-card" style="max-height: none; overflow: visible;">
     <h2>Eliminar productos</h2>
     <p *ngIf="selectedIds.size === 1">
       ¿Seguro que quieres eliminar el producto seleccionado?

@@ -1,23 +1,25 @@
-/* inventory.component.css */
+:host {
+  --navbar-h: 64px;
+}
 
-.col-select{
+.col-select {
   width: 40px;
   text-align: center;
 }
 
-input[type="checkbox"]{
+input[type="checkbox"] {
   transform: scale(1.05);
 }
 
 /* Inputs dentro de tabla: un poco más compactos */
 table input[type="text"],
-table input[type="number"]{
+table input[type="number"] {
   height: 32px;
   padding: 0 8px;
   font-size: 13px;
 }
 
-.modal-subtitle{
+.modal-subtitle {
   margin-top: 10px;
   margin-bottom: 6px;
   font-size: 12px;
@@ -27,10 +29,66 @@ table input[type="number"]{
   letter-spacing: 0.3px;
 }
 
-.profit-hint{
+.profit-hint {
   display: block;
   margin-top: 4px;
   font-size: 12px;
   font-weight: 800;
   color: #16a34a;
+}
+
+.modal-backdrop {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--navbar-h);
+  bottom: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+
+  padding: 16px;
+  background: rgba(0,0,0,.35);
+  z-index: 9999;
+
+  /* si el modal es muy alto, igual el backdrop puede scrollear */
+  overflow-y: auto;
+}
+
+/* Card con layout estable */
+.modal-card {
+  width: 520px;
+  max-width: calc(100vw - 24px);
+
+  /* CLAVE: límite de alto */
+  max-height: calc(100vh - var(--navbar-h) - 32px);
+
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px;
+
+  /* CLAVE: estructura para scroll interno */
+  display: flex;
+  flex-direction: column;
+
+  /* evita que el contenido empuje el card fuera */
+  overflow: hidden;
+}
+
+.modal-title {
+  margin: 0 0 12px 0;
+}
+
+/* CLAVE: el que scrollea */
+.modal-body {
+  overflow-y: auto;
+  padding-right: 6px; /* deja lugar visual para la barra */
+}
+
+/* Footer fijo abajo */
+.modal-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0,0,0,0.08);
 }

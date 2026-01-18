@@ -1,13 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient} from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
-export interface ProductsResponse {
-  data: Product[];
-  total?: number;
-  page?: number;
-  totalPages?: number;
-}
 
 export interface Product {
   id: string;
@@ -18,18 +11,19 @@ export interface Product {
   price2: number;
   price3: number;
   price4: number;
+  categoryId: string; 
   userId: string;
 }
 
-  export type PriceKeyNumber = 1 | 2 | 3 | 4;
+export type PriceKeyNumber = 1 | 2 | 3 | 4;
 
-  export interface DecreaseStockMovementPayload {
-    quantity: number;
-    customerId: string;
-    customerName: string;
-    unitPrice: number;
-    priceKey: PriceKeyNumber;
-  }
+export interface DecreaseStockMovementPayload {
+  quantity: number;
+  customerId: string;
+  customerName: string;
+  unitPrice: number;
+  priceKey: PriceKeyNumber;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ProductsService {
@@ -53,14 +47,8 @@ export class ProductsService {
     return this.http.patch<Product>(`${this.apiUrl}/${id}`, productData);
   }
 
-  decreaseStock(
-    productId: string,
-    payload: DecreaseStockMovementPayload
-  ): Observable<Product> {
-    return this.http.patch<Product>(
-      `${this.apiUrl}/${productId}/decrease-stock`,
-      payload
-    );
+  decreaseStock(productId: string, payload: DecreaseStockMovementPayload): Observable<Product> {
+    return this.http.patch<Product>(`${this.apiUrl}/${productId}/decrease-stock`, payload);
   }
 
   deleteProduct(id: string): Observable<void> {

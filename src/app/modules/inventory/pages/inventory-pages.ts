@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { ProductsService, Product } from '../../products/services/products.service';
+import { CategoriesService } from '../../categories/categories.service';
+import type { Category } from '../../categories/entities/category.entity';
+
 import { Navbar } from '../../../core/navbar/navbar';
 import { Sidenav } from '../../../core/sidenav/sidenav';
 
@@ -11,10 +14,9 @@ import { Sidenav } from '../../../core/sidenav/sidenav';
   standalone: true,
   imports: [CommonModule, FormsModule, Navbar, Sidenav],
   templateUrl: './inventory-pages.html',
-  styleUrls: ['./inventory-pages.css']
+  styleUrls: ['./inventory-pages.css'],
 })
 export class InventoryPages implements OnInit {
-
   products: Product[] = [];
   editedProducts: Product[] = [];
 
@@ -22,57 +24,66 @@ export class InventoryPages implements OnInit {
   editMode = false;
   deleteMode = false;
 
-  // selección para ELIMINAR
   selectedIds = new Set<string>();
-  // selección para EDITAR
   editSelectedIds = new Set<string>();
 
-  // -------- MODALES --------
   showAddForm = false;
   showConfirmUpdate = false;
   showConfirmDelete = false;
 
+  // -------- CATEGORÍAS --------
+  categories: Category[] = [];
+  categoriesLoading = false;
+
+  showCreateCategory = false;
+  newCategoryName = '';
+  newCategoryError = '';
+  creatingCategory = false;
+
   // -------- NUEVO PRODUCTO --------
-    newProduct: any = {
+  newProduct: any = {
     title: '',
     stock: null,
     purchasePrice: null,
     price: null,
     price2: null,
     price3: null,
-    price4: null
+    price4: null,
+    categoryId: '',
   };
 
+  newProductErrors = {
+    title: '',
+    stock: '',
+    purchasePrice: '',
+    price: '',
+    price2: '',
+    price3: '',
+    price4: '',
+    categoryId: '',
+  };
 
-    newProductErrors = {
-      title: '',
-      stock: '',
-      purchasePrice: '',
-      price: '',
-      price2: '',
-      price3: '',
-      price4: ''
-    };
-
-
-  // errores por fila al editar
   editedErrors: {
-  [id: string]: {
-    title?: string;
-    stock?: string;
-    purchasePrice?: string;
-    price?: string;
-    price2?: string;
-    price3?: string;
-    price4?: string;
-  }
+    [id: string]: {
+      title?: string;
+      stock?: string;
+      purchasePrice?: string;
+      price?: string;
+      price2?: string;
+      price3?: string;
+      price4?: string;
+      categoryId?: string;
+    }
   } = {};
 
-
-  constructor(private productsSvc: ProductsService) {}
+  constructor(
+    private productsSvc: ProductsService,
+    private categoriesSvc: CategoriesService,
+  ) {}
 
   ngOnInit(): void {
     this.load();
+    this.loadCategories();
   }
 
   // --------- CARGA ---------
@@ -80,9 +91,10 @@ export class InventoryPages implements OnInit {
     this.loading = true;
     this.productsSvc.getProducts().subscribe({
       next: (data) => {
-        this.products = data;
-        this.editedProducts = JSON.parse(JSON.stringify(data));
+        this.products = data ?? [];
+        this.editedProducts = JSON.parse(JSON.stringify(this.products));
         this.loading = false;
+
         this.editedErrors = {};
         this.selectedIds.clear();
         this.editSelectedIds.clear();
@@ -90,37 +102,84 @@ export class InventoryPages implements OnInit {
       error: () => {
         this.loading = false;
         alert('Error al cargar el inventario.');
-      }
+      },
+    });
+  }
+
+  loadCategories() {
+    this.categoriesLoading = true;
+
+    this.categoriesSvc.getCategories().subscribe({
+      next: (cats) => {
+        const list = (cats ?? []).slice();
+
+        // orden: 1) Varios 2) resto alfabético
+        const varios = list.find(c => (c.name ?? '').trim().toLowerCase() === 'varios');
+        const rest = list
+          .filter(c => c.id !== varios?.id)
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        this.categories = varios ? [varios, ...rest] : rest;
+        this.categoriesLoading = false;
+      },
+      error: () => {
+        this.categoriesLoading = false;
+        alert('Error al cargar categorías.');
+      },
     });
   }
 
   // ========= HELPERS =========
-
   private normalizeNumber(value: any): number | 'invalid' {
-    if (value === null || value === undefined || value === '') {
-      return 0;
-    }
+    if (value === null || value === undefined || value === '') return 0;
     const n = Number(value);
-    if (isNaN(n) || n < 0) {
-      return 'invalid';
-    }
+    if (isNaN(n) || n < 0) return 'invalid';
     return n;
+  }
+
+  private getVariosCategoryId(): string {
+    const varios = this.categories.find(c => (c.name ?? '').trim().toLowerCase() === 'varios');
+    return varios?.id ?? '';
+  }
+
+  /**
+   * Devuelve el categoryId desde una fila (producto).
+   * Soporta 2 formatos:
+   *  - row.categoryId (tu caso actual)
+   *  - row.category?.id (si el backend luego devuelve la relación)
+   */
+  getCategoryIdFromRow(row: any): string {
+    if (!row) return '';
+    const direct = String(row.categoryId ?? '').trim();
+    if (direct) return direct;
+
+    const nested = String(row.category?.id ?? '').trim();
+    if (nested) return nested;
+
+    return '';
+  }
+
+  getCategoryName(categoryId: any): string {
+    const id = String(categoryId ?? '').trim();
+    if (!id) return '—';
+    const c = this.categories.find(x => x.id === id);
+    return c?.name ?? '—';
   }
 
   // --------- VALIDAR NUEVO PRODUCTO ---------
   private validateNewProduct(): boolean {
     let valid = true;
 
-        this.newProductErrors = {
+    this.newProductErrors = {
       title: '',
       stock: '',
       purchasePrice: '',
       price: '',
       price2: '',
       price3: '',
-      price4: ''
+      price4: '',
+      categoryId: '',
     };
-
 
     const title = (this.newProduct.title || '').trim();
     if (!title) {
@@ -131,6 +190,8 @@ export class InventoryPages implements OnInit {
     }
 
     const checkField = (field: keyof typeof this.newProductErrors) => {
+      if (field === 'title' || field === 'categoryId') return;
+
       const normalized = this.normalizeNumber(this.newProduct[field]);
       if (normalized === 'invalid') {
         this.newProductErrors[field] = 'No se aceptan letras y/o números negativos';
@@ -147,10 +208,16 @@ export class InventoryPages implements OnInit {
     checkField('price3');
     checkField('price4');
 
+    const categoryId = (this.newProduct.categoryId || '').trim();
+    if (!categoryId) {
+      this.newProductErrors.categoryId = 'Selecciona una categoría (o crea una nueva).';
+      valid = false;
+    }
+
     return valid;
   }
 
-  // --------- VALIDAR EDITADOS (solo filas seleccionadas) ---------
+  // --------- VALIDAR EDITADOS ---------
   private validateEditedProducts(): boolean {
     let valid = true;
     this.editedErrors = {};
@@ -158,7 +225,7 @@ export class InventoryPages implements OnInit {
     const idsSelected = new Set(this.editSelectedIds);
 
     for (const p of this.editedProducts) {
-      if (!idsSelected.has(p.id)) continue; // solo los seleccionados
+      if (!idsSelected.has(p.id)) continue;
 
       const rowErr: any = {};
 
@@ -188,18 +255,22 @@ export class InventoryPages implements OnInit {
       checkField('price3');
       checkField('price4');
 
-      if (Object.keys(rowErr).length > 0) {
-        this.editedErrors[p.id] = rowErr;
+      const categoryId = String((p as any).categoryId ?? '').trim();
+      if (!categoryId) {
+        rowErr.categoryId = 'Selecciona una categoría';
+        valid = false;
       }
+
+      if (Object.keys(rowErr).length > 0) this.editedErrors[p.id] = rowErr;
     }
 
     return valid;
   }
 
   // ========= FORMULARIO AGREGAR =========
-
-   openAddForm() {
+  openAddForm() {
     this.showAddForm = true;
+
     this.newProduct = {
       title: '',
       stock: null,
@@ -207,8 +278,10 @@ export class InventoryPages implements OnInit {
       price: null,
       price2: null,
       price3: null,
-      price4: null
+      price4: null,
+      categoryId: '',
     };
+
     this.newProductErrors = {
       title: '',
       stock: '',
@@ -216,62 +289,127 @@ export class InventoryPages implements OnInit {
       price: '',
       price2: '',
       price3: '',
-      price4: ''
+      price4: '',
+      categoryId: '',
     };
-  }
 
+    // Por defecto: Varios (si ya está cargado)
+    const variosId = this.getVariosCategoryId();
+    if (variosId) this.newProduct.categoryId = variosId;
+
+    this.showCreateCategory = false;
+    this.newCategoryName = '';
+    this.newCategoryError = '';
+  }
 
   closeAddForm() {
     this.showAddForm = false;
+    this.showCreateCategory = false;
+    this.newCategoryName = '';
+    this.newCategoryError = '';
   }
 
-// guardar nuevo producto
+  onCategorySelectChange(value: string) {
+    this.newProductErrors.categoryId = '';
 
-saveNewProduct() {
-  if (!this.validateNewProduct()) return;
-
-  this.loading = true;
-
-  this.newProductErrors.title = '';
-
-  this.productsSvc.createProduct(this.newProduct).subscribe({
-    next: (product) => {
-      this.loading = false;
-      this.showAddForm = false;
-
-      this.products.push(product);
-      this.editedProducts = JSON.parse(JSON.stringify(this.products));
-      this.editedErrors = {};
-    },
-    error: (err) => {
-      this.loading = false;
-
-      const msg = (err?.error?.message || err?.error || err?.message || '').toString().toLowerCase();
-
-      const isDuplicate =
-        err?.status === 409 ||
-        msg.includes('duplicate') ||
-        msg.includes('unique') ||
-        msg.includes('already exists') ||
-        msg.includes('already') ||
-        msg.includes('ya existe') ||
-        msg.includes('23505');
-
-      if (isDuplicate) {
-        this.newProductErrors.title =
-          'Ya tienes un producto con este nombre, intenta agregarle algún símbolo o otra letra';
-        return;
-      }
-
-      alert('No se pudo crear el producto.');
+    if (value === '__add__') {
+      this.showCreateCategory = true;
+      this.newProduct.categoryId = '';
+      return;
     }
-  });
-}
+
+    this.showCreateCategory = false;
+    this.newProduct.categoryId = value;
+  }
+
+  cancelCreateCategory() {
+    this.showCreateCategory = false;
+    this.newCategoryName = '';
+    this.newCategoryError = '';
+
+    // volver a seleccionar Varios al cancelar
+    const variosId = this.getVariosCategoryId();
+    if (variosId) this.newProduct.categoryId = variosId;
+  }
+
+  createCategoryFromModal() {
+    const name = (this.newCategoryName || '').trim();
+    if (!name) {
+      this.newCategoryError = 'El nombre es obligatorio.';
+      return;
+    }
+
+    this.newCategoryError = '';
+    this.creatingCategory = true;
+
+    this.categoriesSvc.createCategory({ name }).subscribe({
+      next: (created) => {
+        this.creatingCategory = false;
+
+        const varios = this.categories.find(c => (c.name ?? '').trim().toLowerCase() === 'varios');
+        const rest = this.categories
+          .filter(c => c.id !== varios?.id)
+          .filter(c => c.id !== created.id);
+
+        const updatedRest = [...rest, created].sort((a, b) => a.name.localeCompare(b.name));
+        this.categories = varios ? [varios, ...updatedRest] : updatedRest;
+
+        this.newProduct.categoryId = created.id;
+        this.showCreateCategory = false;
+        this.newCategoryName = '';
+      },
+      error: (err) => {
+        this.creatingCategory = false;
+        this.newCategoryError = String(err?.error?.message || 'No se pudo crear la categoría.');
+      },
+    });
+  }
+
+  // guardar nuevo producto
+  saveNewProduct() {
+    if (!this.validateNewProduct()) return;
+
+    this.loading = true;
+    this.newProductErrors.title = '';
+
+    this.productsSvc.createProduct(this.newProduct).subscribe({
+      next: (product) => {
+        this.loading = false;
+        this.showAddForm = false;
+
+        this.products.push(product);
+        this.editedProducts = JSON.parse(JSON.stringify(this.products));
+        this.editedErrors = {};
+      },
+      error: (err) => {
+        this.loading = false;
+
+        const msg = (err?.error?.message || err?.error || err?.message || '')
+          .toString()
+          .toLowerCase();
+
+        const isDuplicate =
+          err?.status === 409 ||
+          msg.includes('duplicate') ||
+          msg.includes('unique') ||
+          msg.includes('already exists') ||
+          msg.includes('already') ||
+          msg.includes('ya existe') ||
+          msg.includes('23505');
+
+        if (isDuplicate) {
+          this.newProductErrors.title =
+            'Ya tienes un producto con este nombre, intenta agregarle algún símbolo o otra letra';
+          return;
+        }
+
+        alert('No se pudo crear el producto.');
+      },
+    });
+  }
 
   // ========= EDITAR =========
-
   onEditButton() {
-    // entrar en modo edición
     if (!this.editMode) {
       this.editedProducts = JSON.parse(JSON.stringify(this.products));
       this.editedErrors = {};
@@ -280,16 +418,13 @@ saveNewProduct() {
       return;
     }
 
-    // ya estamos en editMode → usuario clicó "Guardar cambios"
     if (this.editSelectedIds.size === 0) {
-      // si no hay nada seleccionado, salimos sin hacer nada
       this.editMode = false;
       this.editedProducts = JSON.parse(JSON.stringify(this.products));
       this.editedErrors = {};
       return;
     }
 
-    // abrimos modal de confirmación
     this.showConfirmUpdate = true;
   }
 
@@ -305,10 +440,7 @@ saveNewProduct() {
   async confirmUpdate() {
     this.showConfirmUpdate = false;
 
-    if (!this.validateEditedProducts()) {
-      // si hay errores, se pintan en la tabla y NO llama al backend
-      return;
-    }
+    if (!this.validateEditedProducts()) return;
 
     this.loading = true;
     const idsToUpdate = new Set(this.editSelectedIds);
@@ -318,16 +450,16 @@ saveNewProduct() {
       if (!idsToUpdate.has(p.id)) continue;
 
       try {
-       await this.productsSvc.updateProduct(p.id, {
-        title: p.title,
-        stock: p.stock,
-        purchasePrice: p.purchasePrice,
-        price: p.price,
-        price2: p.price2,
-        price3: p.price3,
-        price4: p.price4
-      }).toPromise();
-
+        await this.productsSvc.updateProduct(p.id, {
+          title: p.title,
+          stock: p.stock,
+          purchasePrice: p.purchasePrice,
+          price: p.price,
+          price2: p.price2,
+          price3: p.price3,
+          price4: p.price4,
+          categoryId: (p as any).categoryId,
+        }).toPromise();
       } catch (e) {
         console.error(e);
         errors++;
@@ -335,10 +467,7 @@ saveNewProduct() {
     }
 
     this.loading = false;
-
-    if (errors > 0) {
-      alert('Error al guardar algunos cambios.');
-    }
+    if (errors > 0) alert('Error al guardar algunos cambios.');
 
     this.editMode = false;
     this.editSelectedIds.clear();
@@ -353,7 +482,6 @@ saveNewProduct() {
   }
 
   // ========= ELIMINAR =========
-
   onDeleteButton() {
     if (!this.deleteMode) {
       this.deleteMode = true;
@@ -366,10 +494,8 @@ saveNewProduct() {
       return;
     }
 
-    // abrimos modal de confirmación
     this.showConfirmDelete = true;
   }
-  
 
   async confirmDelete() {
     if (this.selectedIds.size === 0) {
@@ -383,7 +509,6 @@ saveNewProduct() {
     let errors = 0;
 
     try {
-      // eliminamos uno por uno usando deleteProduct (el que ya existe en el service)
       for (const id of ids) {
         try {
           await this.productsSvc.deleteProduct(id).toPromise();
@@ -398,10 +523,7 @@ saveNewProduct() {
       this.deleteMode = false;
       this.selectedIds.clear();
 
-      if (errors > 0) {
-        alert('Error al eliminar algunos productos.');
-      }
-
+      if (errors > 0) alert('Error al eliminar algunos productos.');
       this.load();
     } catch (err) {
       console.error(err);
@@ -412,12 +534,8 @@ saveNewProduct() {
   }
 
   get deleteButtonLabel(): string {
-    if (!this.deleteMode) {
-      return 'Eliminar productos';
-    }
-    if (this.selectedIds.size === 0) {
-      return 'Cancelar eliminación';
-    }
+    if (!this.deleteMode) return 'Eliminar productos';
+    if (this.selectedIds.size === 0) return 'Cancelar eliminación';
     return 'Confirmar eliminación';
   }
 
@@ -430,19 +548,14 @@ saveNewProduct() {
     else this.selectedIds.delete(id);
   }
 
- getProfitPercent(purchase: any, sale: any): number | null {
-  const buy = Number(purchase ?? 0);
-  const sell = Number(sale ?? 0);
+  getProfitPercent(purchase: any, sale: any): number | null {
+    const buy = Number(purchase ?? 0);
+    const sell = Number(sale ?? 0);
 
-  if (!Number.isFinite(buy) || buy <= 0) return null;
-  if (!Number.isFinite(sell) || sell <= 0) return null;
+    if (!Number.isFinite(buy) || buy <= 0) return null;
+    if (!Number.isFinite(sell) || sell <= 0) return null;
 
-  const pct = ((sell - buy) / buy) * 100;
-
-  // Si NO querés mostrar negativos, descomentá esto:
-  // if (pct < 0) return null;
-
-  return Math.round(pct * 10) / 10; // 1 decimal
-}
-
+    const pct = ((sell - buy) / buy) * 100;
+    return Math.round(pct * 10) / 10;
+  }
 }
