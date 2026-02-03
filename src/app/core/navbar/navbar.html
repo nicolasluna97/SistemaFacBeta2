@@ -1,8 +1,27 @@
 <div class="navbar-container">
   <div class="nav-left">
+    <!-- (vacío por ahora) -->
   </div>
 
   <div class="nav-right">
+
+    <!-- Toggle tema (NUEVO) -->
+    <button
+      class="theme-toggle"
+      type="button"
+      (click)="toggleTheme()"
+      [attr.aria-pressed]="isDark"
+      title="Cambiar tema"
+    >
+      <span class="theme-label">Tema</span>
+
+      <span class="theme-switch" [class.on]="isDark">
+        <span class="theme-knob"></span>
+      </span>
+
+      <span class="theme-ico" aria-hidden="true">{{ isDark ? '🌙' : '☀️' }}</span>
+    </button>
+
     <!-- Botón Ingresar -->
     <button
       *ngIf="!isAuthenticated"
@@ -42,7 +61,6 @@
         type="button"
         (click)="gotoHelp(); menuOpen=false"
       >
-        <!-- Si querés usar tu icono de help, cambiá el src por tu archivo real -->
         <img class="nav-ico" src="assets/icons/badge-question-mark.svg" alt="" />
         Ayuda
       </button>

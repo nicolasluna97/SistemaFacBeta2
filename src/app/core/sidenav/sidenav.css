@@ -1,4 +1,4 @@
-.sidenav-container {
+.sidenav-container{
   width: var(--side-w);
   height: calc(100vh - var(--nav-h));
 
@@ -13,79 +13,90 @@
 
   overflow-y: auto;
   overflow-x: hidden;
-
-  /* Importante: NO se contrae, NO cambia de ancho */
 }
 
+/* Scroll fino pro */
+.sidenav-container::-webkit-scrollbar{ width: 10px; }
+.sidenav-container::-webkit-scrollbar-thumb{
+  background: color-mix(in srgb, var(--muted) 30%, transparent);
+  border-radius: 10px;
+}
+.sidenav-container::-webkit-scrollbar-track{ background: transparent; }
+
 /* Secciones */
-.nav-section {
+.nav-section{
   padding: 6px 6px 10px;
 }
 
-.nav-title {
-  margin: 12px 10px 8px;
-  font-size: 0.95rem;
-  font-weight: 800;
+.nav-title{
+  margin: 14px 10px 10px;
+  font-size: 15px;     /* más grande */
+  font-weight: 950;
   color: var(--muted);
   letter-spacing: 0.2px;
 }
 
-/* Link botón */
-.sidenav-link {
+/* Link */
+.sidenav-link{
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 
-  padding: 10px 12px;
-  margin: 4px 0;
+  padding: 12px 12px;  /* más grande */
+  margin: 6px 0;
 
-  border-radius: 12px;
+  border-radius: 14px;
   text-decoration: none;
 
   color: var(--text);
-  font-weight: 750;
+  font-weight: 900;
+  font-size: 15px;
 
-  transition: background 0.15s ease, transform 0.15s ease;
+  border: 1px solid transparent;
+
+  transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
 }
 
-.sidenav-link:hover {
+.sidenav-link:hover{
   background: var(--hover);
   transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--border) 55%, transparent);
 }
 
-.sidenav-link.active-b {
+.sidenav-link.active-b{
   background: var(--primary-weak);
   color: var(--text);
-  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
 }
 
-body.theme-dark .sidenav-link.active-b {
-  border-color: rgba(96, 165, 250, 0.25);
-}
-
-/* Ícono SVG */
-.side-ico {
-  width: 20px;
-  height: 20px;
+/* Íconos */
+.side-ico{
+  width: 22px;
+  height: 22px;
   display: block;
+  opacity: 0.95;
+}
+
+/* Si los SVG son oscuros: invertimos en tema oscuro */
+body.theme-dark .side-ico{
+  filter: brightness(0) invert(1);
   opacity: 0.92;
 }
 
-/* Ajuste texto */
-.btn-text {
-  line-height: 1.15;
+.btn-text{
+  line-height: 1.2;
 }
 
 /* Divider */
-.divider {
+.divider{
   height: 1px;
   background: var(--border);
-  margin: 10px 8px;
+  margin: 12px 8px;
 }
 
-/* Responsive: en pantallas chicas ocultamos el texto (opcional) */
-@media (max-width: 768px) {
-  .btn-text { display: none; }
-  .sidenav-link { justify-content: center; }
+/* Responsive */
+@media (max-width: 768px){
+  .btn-text{ display: none; }
+  .sidenav-link{ justify-content: center; }
 }

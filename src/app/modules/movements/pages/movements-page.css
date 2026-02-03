@@ -8,12 +8,13 @@
   font-weight: 700;
 }
 
-/* Card base */
+/* Card base (usa tokens globales) */
 .card {
-  background: #fff;
-  border: 1px solid #e9e9ee;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  box-shadow: var(--shadow);
+  color: var(--text);
 }
 
 .filters-card {
@@ -36,40 +37,41 @@
 }
 
 .filters-right .muted {
-  color: #6b7280;
+  color: var(--muted);
   font-size: 13px;
 }
 
 .filter-label {
   font-weight: 700;
   font-size: 13px;
-  color: #111827;
+  color: var(--text);
 }
 
 .filter-select {
   height: 32px;
   padding: 0 10px;
   border-radius: 8px;
-  border: 1px solid #d6d6df;
-  background: #fff;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text);
   outline: none;
 }
 
 .filter-select:focus {
-  border-color: #9bbcff;
-  box-shadow: 0 0 0 3px rgba(120, 160, 255, 0.20);
+  border-color: rgba(96,165,250,0.7);
+  box-shadow: 0 0 0 3px var(--focus);
 }
 
 /* Estado */
 .status-line {
   margin: 10px 0;
-  color: #374151;
+  color: var(--muted);
   font-size: 14px;
 }
 
 .empty {
   margin-top: 10px;
-  color: #6b7280;
+  color: var(--muted);
   font-size: 14px;
 }
 
@@ -81,7 +83,7 @@
 
 .table-wrap {
   width: 100%;
-  overflow: auto; /* si algún día se achica, que scrollee horizontal */
+  overflow: auto;
 }
 
 .table-modern {
@@ -95,64 +97,65 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  background: #fbfbfe;
+
+  background: var(--table-head-bg);
   text-align: left;
   padding: 12px 14px;
   font-size: 12px;
   letter-spacing: 0.3px;
   text-transform: uppercase;
-  color: #6b7280;
-  border-bottom: 1px solid #ececf2;
+  color: var(--muted);
+  border-bottom: 1px solid rgba(148,163,184,0.18);
 }
 
 .table-modern tbody td {
   padding: 14px;
   vertical-align: middle;
-  border-bottom: 1px solid #f0f0f6; /* marca bien diferencia entre ventas */
+  border-bottom: 1px solid rgba(148,163,184,0.12);
 }
 
-/* filas con leve zebra */
+/* zebra + hover con tokens globales */
 .table-modern tbody tr:nth-child(even) {
-  background: #fcfcff;
+  background: var(--table-row-even);
 }
 
 .table-modern tbody tr:hover {
-  background: #f6f9ff;
+  background: var(--table-row-hover);
 }
 
 /* contenido dentro de celdas */
 .cell-main {
-  font-weight: 600;
-  color: #111827;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .cell-sub {
   margin-top: 2px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted);
 }
 
-/* “Píldoras” para estado/empleado (aunque hoy estén vacíos) */
+/* Píldoras adaptables a tema */
 .pill {
   display: inline-flex;
   align-items: center;
   height: 24px;
   padding: 0 10px;
   border-radius: 999px;
-  border: 1px solid #dbeafe;
-  background: #eff6ff;
-  color: #1d4ed8;
+
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .pill-empty {
-  border-color: #e5e7eb;
-  background: #f9fafb;
-  color: #9ca3af;
+  opacity: 0.65;
 }
 
-/* Anchos sugeridos (para que “use todo el ancho” ordenado) */
+/* Anchos sugeridos */
 .col-client { width: 20%; }
 .col-product { width: 26%; }
 .col-price { width: 16%; }
@@ -167,35 +170,40 @@
   justify-content: flex-end;
   gap: 10px;
   padding: 12px 14px;
-  background: #fff;
+  background: var(--card);
+  border-top: 1px solid rgba(148,163,184,0.12);
 }
 
 .page-indicator {
   font-size: 13px;
-  color: #374151;
+  color: var(--muted);
 }
 
-/* Botones básicos (si ya tenés bootstrap, podés borrar esto) */
+/* Botones: usa tokens para que no “rompa” en dark */
 .btn {
   border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 6px 10px;
+  border-radius: 10px;
+  padding: 7px 12px;
   cursor: pointer;
   font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  background: var(--surface);
 }
 
-.btn-light {
-  background: #fff;
-  border-color: #d6d6df;
-}
-
-.btn-light:disabled {
+.btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 
+.btn-light {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
 .btn-primary {
-  background: #2563eb;
+  background: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 65%, transparent);
   color: #fff;
 }
 

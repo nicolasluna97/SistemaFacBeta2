@@ -15,9 +15,10 @@
 
   padding: 0 14px;
 
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(10px);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
+
+  backdrop-filter: blur(10px);
 }
 
 body.theme-dark .navbar-container {
@@ -42,6 +43,70 @@ body.theme-dark .navbar-container {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* ===== Theme Toggle (NUEVO) ===== */
+.theme-toggle{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 999px;
+  cursor: pointer;
+
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.theme-toggle:hover{
+  background: var(--surface-2);
+  transform: translateY(-1px);
+}
+
+.theme-label{
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.theme-switch{
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(148,163,184,0.35);
+  border: 1px solid rgba(148,163,184,0.35);
+  position: relative;
+  display: inline-block;
+}
+
+.theme-switch.on{
+  background: rgba(96,165,250,0.35);
+  border-color: rgba(96,165,250,0.55);
+}
+
+.theme-knob{
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  transform: translateY(-50%);
+  transition: left 0.18s ease;
+}
+
+.theme-switch.on .theme-knob{
+  left: 23px;
+}
+
+.theme-ico{
+  font-size: 16px;
+  line-height: 1;
 }
 
 .login-btn {
@@ -82,6 +147,12 @@ body.theme-dark .navbar-container {
   height: 20px;
   display: block;
   opacity: 0.92;
+}
+
+/* Si tus SVG son negros fijos, esto los “blanquea” en dark sin tocar archivos */
+body.theme-dark .nav-ico{
+  filter: invert(1) brightness(1.1);
+  opacity: 0.95;
 }
 
 /* Dropdown */

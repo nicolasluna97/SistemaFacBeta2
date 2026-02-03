@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../modules/auth/services/auth.service';
 
+type ThemeMode = 'light' | 'dark';
+
 @Component({
   selector: 'app-navbar',
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './navbar.html',
-  styleUrl: './navbar.css' // lo dejo como ya lo tenías y te viene funcionando
+  styleUrl: './navbar.css',
 })
 export class Navbar {
   private auth = inject(AuthService);
@@ -17,11 +19,18 @@ export class Navbar {
 
   menuOpen = false;
 
+  // ===== Tema =====
+  private readonly THEME_KEY = 'app_theme';
+  isDark = false;
+
+  constructor() {
+    this.initTheme();
+  }
+
   get isAuthenticated() {
     return this.auth.isAuthenticated();
   }
 
-  // esto ya lo usabas, lo dejo igual
   get user() {
     return (this as any).auth?._user?.() ?? null;
   }
@@ -39,17 +48,41 @@ export class Navbar {
   }
 
   gotoAccount() {
-    this.router.navigateByUrl('/cuenta');   // ✅ va a cargar AccountPage
+    this.router.navigateByUrl('/cuenta');
   }
 
   gotoHelp() {
-    this.router.navigateByUrl('/ayuda');    // (cuando tengas esa ruta)
+    this.router.navigateByUrl('/ayuda');
   }
 
   logout() {
     this.auth.logout();
     this.menuOpen = false;
     this.router.navigateByUrl('/auth/login');
+  }
+
+  // ===== Tema methods =====
+
+  toggleTheme() {
+    const next: ThemeMode = this.isDark ? 'light' : 'dark';
+    this.applyTheme(next, true);
+  }
+
+  private initTheme() {
+    const saved = (localStorage.getItem(this.THEME_KEY) as ThemeMode | null);
+    const mode: ThemeMode = saved === 'dark' || saved === 'light' ? saved : 'light';
+    this.applyTheme(mode, false);
+  }
+
+  private applyTheme(mode: ThemeMode, persist: boolean) {
+    this.isDark = mode === 'dark';
+
+    // Usamos class en body (simple y robusto)
+    document.body.classList.toggle('theme-dark', this.isDark);
+
+    if (persist) {
+      localStorage.setItem(this.THEME_KEY, mode);
+    }
   }
 
   // Cerrar menú si clic fuera del navbar
