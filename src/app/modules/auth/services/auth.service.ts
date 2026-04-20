@@ -12,7 +12,7 @@ import {
   RefreshResponse,
 } from '../interfaces/auth.models';
 
-type JwtPayload = { exp?: number; [key: string]: any };
+type JwtPayload = { exp?: number; sub?: string; iat?: number; [key: string]: any };
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -94,7 +94,14 @@ export class AuthService {
 
       const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
       const json = atob(payloadBase64);
-      return JSON.parse(json);
+      const payload = JSON.parse(json);
+
+      // PUNTO 3: Validar estructura del JWT
+      if (!payload.exp || !payload.sub || typeof payload.exp !== 'number') {
+        return null;
+      }
+
+      return payload as JwtPayload;
     } catch {
       return null;
     }

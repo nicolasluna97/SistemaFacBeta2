@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { ProductsService, Product } from '../../products/services/products.service';
 import { CategoriesService } from '../../categories/categories.service';
@@ -16,7 +18,10 @@ import { Sidenav } from '../../../core/sidenav/sidenav';
   templateUrl: './inventory-pages.html',
   styleUrls: ['./inventory-pages.css'],
 })
-export class InventoryPages implements OnInit {
+export class InventoryPages implements OnInit, OnDestroy {
+  // PUNTO 1: Agregar destroy$ para cleanup de subscriptions
+  private destroy$ = new Subject<void>();
+
   products: Product[] = [];
   editedProducts: Product[] = [];
 
@@ -86,47 +91,57 @@ export class InventoryPages implements OnInit {
     this.loadCategories();
   }
 
+  // PUNTO 1: Agregar ngOnDestroy para limpiar subscriptions
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   // --------- CARGA ---------
   load() {
     this.loading = true;
-    this.productsSvc.getProducts().subscribe({
-      next: (data) => {
-        this.products = data ?? [];
-        this.editedProducts = JSON.parse(JSON.stringify(this.products));
-        this.loading = false;
+    this.productsSvc.getProducts()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.products = data ?? [];
+          this.editedProducts = structuredClone(this.products);
+          this.loading = false;
 
-        this.editedErrors = {};
-        this.selectedIds.clear();
-        this.editSelectedIds.clear();
-      },
-      error: () => {
-        this.loading = false;
-        alert('Error al cargar el inventario.');
-      },
-    });
+          this.editedErrors = {};
+          this.selectedIds.clear();
+          this.editSelectedIds.clear();
+        },
+        error: () => {
+          this.loading = false;
+          alert('Error al cargar el inventario.');
+        },
+      });
   }
 
   loadCategories() {
     this.categoriesLoading = true;
 
-    this.categoriesSvc.getCategories().subscribe({
-      next: (cats) => {
-        const list = (cats ?? []).slice();
+    this.categoriesSvc.getCategories()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (cats) => {
+          const list = (cats ?? []).slice();
 
-        // orden: 1) Varios 2) resto alfabético
-        const varios = list.find(c => (c.name ?? '').trim().toLowerCase() === 'varios');
-        const rest = list
-          .filter(c => c.id !== varios?.id)
-          .sort((a, b) => a.name.localeCompare(b.name));
+          // orden: 1) Varios 2) resto alfabético
+          const varios = list.find(c => (c.name ?? '').trim().toLowerCase() === 'varios');
+          const rest = list
+            .filter(c => c.id !== varios?.id)
+            .sort((a, b) => a.name.localeCompare(b.name));
 
-        this.categories = varios ? [varios, ...rest] : rest;
-        this.categoriesLoading = false;
-      },
-      error: () => {
-        this.categoriesLoading = false;
-        alert('Error al cargar categorías.');
-      },
-    });
+          this.categories = varios ? [varios, ...rest] : rest;
+          this.categoriesLoading = false;
+        },
+        error: () => {
+          this.categoriesLoading = false;
+          alert('Error al cargar categorías.');
+        },
+      });
   }
 
   // ========= HELPERS =========
@@ -342,27 +357,33 @@ export class InventoryPages implements OnInit {
     this.newCategoryError = '';
     this.creatingCategory = true;
 
-    this.categoriesSvc.createCategory({ name }).subscribe({
-      next: (created) => {
-        this.creatingCategory = false;
+    this.categoriesSvc.createCategory({ name })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (created) => {
+          this.creatingCategory = false;
 
-        const varios = this.categories.find(c => (c.name ?? '').trim().toLowerCase() === 'varios');
-        const rest = this.categories
-          .filter(c => c.id !== varios?.id)
-          .filter(c => c.id !== created.id);
+          const varios = this.categories.find(c => (c.name ?? '').trim().toLowerCase() === 'varios');
+          const rest = this.categories
+            .filter(c => c.id !== varios?.id)
+            .filter(c => c.id !== created.id);
 
-        const updatedRest = [...rest, created].sort((a, b) => a.name.localeCompare(b.name));
-        this.categories = varios ? [varios, ...updatedRest] : updatedRest;
+          const updatedRest = [...rest, created].sort((a, b) => a.name.localeCompare(b.name));
+          this.categories = varios ? [varios, ...updatedRest] : updatedRest;
 
-        this.newProduct.categoryId = created.id;
-        this.showCreateCategory = false;
-        this.newCategoryName = '';
-      },
-      error: (err) => {
-        this.creatingCategory = false;
-        this.newCategoryError = String(err?.error?.message || 'No se pudo crear la categoría.');
-      },
-    });
+          this.newProduct.categoryId = created.id;
+          this.showCreateCategory = false;
+          this.newCategoryName = '';
+        },
+        error: (err) => {
+          this.creatingCategory = false;
+          // PUNTO 2: Sanitizar errores del servidor
+          const message = typeof err?.error?.message === 'string' 
+            ? 'Error procesando solicitud' 
+            : 'No se pudo crear la categoría.';
+          this.newCategoryError = message;
+        },
+      });
   }
 
   // guardar nuevo producto
@@ -372,46 +393,48 @@ export class InventoryPages implements OnInit {
     this.loading = true;
     this.newProductErrors.title = '';
 
-    this.productsSvc.createProduct(this.newProduct).subscribe({
-      next: (product) => {
-        this.loading = false;
-        this.showAddForm = false;
+    this.productsSvc.createProduct(this.newProduct)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (product) => {
+          this.loading = false;
+          this.showAddForm = false;
 
-        this.products.push(product);
-        this.editedProducts = JSON.parse(JSON.stringify(this.products));
-        this.editedErrors = {};
-      },
-      error: (err) => {
-        this.loading = false;
+          this.products.push(product);
+          this.editedProducts = structuredClone(this.products);
+          this.editedErrors = {};
+        },
+        error: (err) => {
+          this.loading = false;
 
-        const msg = (err?.error?.message || err?.error || err?.message || '')
-          .toString()
-          .toLowerCase();
+          const msg = (err?.error?.message || err?.error || err?.message || '')
+            .toString()
+            .toLowerCase();
 
-        const isDuplicate =
-          err?.status === 409 ||
-          msg.includes('duplicate') ||
-          msg.includes('unique') ||
-          msg.includes('already exists') ||
-          msg.includes('already') ||
-          msg.includes('ya existe') ||
-          msg.includes('23505');
+          const isDuplicate =
+            err?.status === 409 ||
+            msg.includes('duplicate') ||
+            msg.includes('unique') ||
+            msg.includes('already exists') ||
+            msg.includes('already') ||
+            msg.includes('ya existe') ||
+            msg.includes('23505');
 
-        if (isDuplicate) {
-          this.newProductErrors.title =
-            'Ya tienes un producto con este nombre, intenta agregarle algún símbolo o otra letra';
-          return;
-        }
+          if (isDuplicate) {
+            this.newProductErrors.title =
+              'Ya tienes un producto con este nombre, intenta agregarle algún símbolo o otra letra';
+            return;
+          }
 
-        alert('No se pudo crear el producto.');
-      },
-    });
+          alert('No se pudo crear el producto.');
+        },
+      });
   }
 
   // ========= EDITAR =========
   onEditButton() {
     if (!this.editMode) {
-      this.editedProducts = JSON.parse(JSON.stringify(this.products));
+      this.editedProducts = structuredClone(this.products);
       this.editedErrors = {};
       this.editSelectedIds.clear();
       this.editMode = true;
@@ -420,7 +443,7 @@ export class InventoryPages implements OnInit {
 
     if (this.editSelectedIds.size === 0) {
       this.editMode = false;
-      this.editedProducts = JSON.parse(JSON.stringify(this.products));
+      this.editedProducts = structuredClone(this.products);
       this.editedErrors = {};
       return;
     }
@@ -476,7 +499,7 @@ export class InventoryPages implements OnInit {
 
   cancelEdit() {
     this.editMode = false;
-    this.editedProducts = JSON.parse(JSON.stringify(this.products));
+    this.editedProducts = structuredClone(this.products);
     this.editedErrors = {};
     this.editSelectedIds.clear();
   }
