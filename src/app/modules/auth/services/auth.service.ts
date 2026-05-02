@@ -1,4 +1,3 @@
-// src/app/modules/auth/services/auth.service.ts
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -16,18 +15,18 @@ type JwtPayload = { exp?: number; sub?: string; iat?: number; [key: string]: any
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly ACCESS_TOKEN_KEY = 'access_token';
-  private readonly REFRESH_TOKEN_KEY = 'refresh_token';
-
+  // access token en memoria (menos exposición que localStorage)
+  private accessToken: string | null = null;
   user = signal<any | null>(null);
 
   constructor(private http: HttpClient) {}
 
-  // ========= HTTP (Auth API) =========
-
-  // Mantengo el nombre que tu login ya usa: loginDetailed(email, password)
   loginDetailed(email: string, password: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>('/api/auth/login', { email, password });
+    return this.http.post<LoginResponse>(
+      '/api/auth/login',
+      { email, password },
+      { withCredentials: true },
+    );
   }
 
   register(dto: RegisterDto): Observable<RegisterResponse> {
@@ -35,56 +34,56 @@ export class AuthService {
   }
 
   verifyEmail(email: string, code: string): Observable<VerifyEmailResponse> {
-    return this.http.post<VerifyEmailResponse>('/api/auth/verify-email', { email, code });
+    return this.http.post<VerifyEmailResponse>(
+      '/api/auth/verify-email',
+      { email, code },
+      { withCredentials: true },
+    );
   }
 
   resendVerificationCode(email: string): Observable<ResendCodeResponse> {
     return this.http.post<ResendCodeResponse>('/api/auth/resend-code', { email });
   }
 
-  refreshToken(refreshToken: string): Observable<RefreshResponse> {
-    return this.http.post<RefreshResponse>('/api/auth/refresh', { refreshToken });
+  refreshToken(): Observable<RefreshResponse> {
+    return this.http.post<RefreshResponse>(
+      '/api/auth/refresh',
+      {},
+      { withCredentials: true },
+    );
   }
 
-  // ========= Session / Tokens =========
+  logoutServer(): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>(
+      '/api/auth/logout',
+      {},
+      { withCredentials: true },
+    );
+  }
 
   getAccessToken(): string | null {
-    return localStorage.getItem(this.ACCESS_TOKEN_KEY);
+    return this.accessToken;
   }
 
-  getRefreshToken(): string | null {
-    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
-  }
-
-  setSession(tokens: { token: string; refreshToken?: string }, user?: any) {
-    localStorage.setItem(this.ACCESS_TOKEN_KEY, tokens.token);
-
-    if (tokens.refreshToken) {
-      localStorage.setItem(this.REFRESH_TOKEN_KEY, tokens.refreshToken);
-    }
-
+  setSession(tokens: { token: string }, user?: any) {
+    this.accessToken = tokens.token;
     if (user !== undefined) this.user.set(user);
   }
 
   logout() {
-    localStorage.removeItem(this.ACCESS_TOKEN_KEY);
-    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+    this.accessToken = null;
     this.user.set(null);
   }
 
   isAuthenticated(): boolean {
-    return this.isTokenValid(this.getAccessToken());
+    return this.isTokenValid(this.accessToken);
   }
-
-  // ========= Helpers =========
 
   private isTokenValid(token: string | null): boolean {
     if (!token) return false;
     const payload = this.decodeJwtPayload(token);
     if (!payload?.exp) return false;
-
-    const expMs = payload.exp * 1000;
-    return expMs > Date.now();
+    return payload.exp * 1000 > Date.now();
   }
 
   private decodeJwtPayload(token: string): JwtPayload | null {
@@ -96,11 +95,7 @@ export class AuthService {
       const json = atob(payloadBase64);
       const payload = JSON.parse(json);
 
-      // PUNTO 3: Validar estructura del JWT
-      if (!payload.exp || !payload.sub || typeof payload.exp !== 'number') {
-        return null;
-      }
-
+      if (!payload.exp || !payload.sub || typeof payload.exp !== 'number') return null;
       return payload as JwtPayload;
     } catch {
       return null;

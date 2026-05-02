@@ -1,4 +1,3 @@
-// src/app/modules/auth/interceptors/auth.interceptor.ts
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
@@ -10,25 +9,27 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
 
   const token = auth.getAccessToken();
-
-  // ✅ sirve para '/api/...' y para 'http://localhost:3000/api/...'
   const isApiCall = req.url.includes('/api/');
+  const isAuthRefreshCall = req.url.includes('/api/auth/refresh');
 
-  const authReq =
-    token && isApiCall
-      ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
-      : req;
+  let request = req;
 
-  return next(authReq).pipe(
+  if (isApiCall && token) {
+    request = req.clone({
+      setHeaders: { Authorization: `Bearer ${token}` },
+      withCredentials: true,
+    });
+  } else if (isAuthRefreshCall || isApiCall) {
+    request = req.clone({ withCredentials: true });
+  }
+
+  return next(request).pipe(
     catchError((err) => {
       if (err?.status === 401 || err?.status === 403) {
         auth.logout();
-
         const current = router.url || '';
         if (!current.startsWith('/auth/')) {
           router.navigate(['/auth/login'], { queryParams: { returnUrl: current } });
-        } else {
-          router.navigate(['/auth/login']);
         }
       }
       return throwError(() => err);
